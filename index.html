@@ -9,216 +9,151 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; background: #000; color: #fff; overflow: hidden;
     font-family: system-ui, -apple-system, "Noto Sans Thai", "Sarabun", sans-serif; }
-  button { font-family: inherit; cursor: pointer; }
-  button:focus-visible { outline: 6px solid #00e5ff; outline-offset: 2px; }
-
-  /* camera + boxes */
   #view { position: fixed; inset: 0; border: 0; background: transparent; color: inherit; width: 100%; }
   video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-  body.nocam video, body.nocam canvas { opacity: 0; }
 
-  /* ---------- start screen ---------- */
-  #startScreen { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 14px; padding: 16px; }
-  #title { text-align: center; padding-top: 6px; }
-  #title h1 { font-size: 34px; }
-  #title p { font-size: 17px; color: #bbb; margin-top: 4px; }
-  #startBtn { flex: 1; border: 5px solid #fff; border-radius: 32px; background: #ffd600; color: #000;
-    font-size: 64px; font-weight: 900; }
-  #startNote { text-align: center; font-size: 16px; color: #ccc; min-height: 24px; }
-  #gear { height: 64px; border: 3px solid #777; border-radius: 18px; background: #222; color: #fff; font-size: 22px; }
-  body.running #startScreen { display: none; }
-
-  /* ---------- running screen ---------- */
-  #runScreen { display: none; }
-  body.running #runScreen { display: block; }
   #radar { position: fixed; top: 0; left: 0; right: 0; display: grid; grid-template-columns: 1fr 1fr 1fr;
-    gap: 5px; padding: 6px; background: rgba(0,0,0,.75); pointer-events: none; }
-  .cell { border-radius: 14px; padding: 8px 4px; text-align: center; background: #1b5e20; min-height: 84px; }
-  .cell .dir { font-size: 16px; opacity: .9; }
-  .cell .val { font-size: 22px; font-weight: 800; line-height: 1.2; }
-  .cell.mid { background: #e65100; }
-  .cell.near { background: #c62828; }
-  #say { position: fixed; left: 10px; right: 10px; top: 156px; padding: 14px; border-radius: 16px;
-    font-size: 34px; font-weight: 900; text-align: center; background: #ffd600; color: #000;
-    display: none; pointer-events: none; }
-  #say.urgent { background: #ff1744; color: #fff; }
-  #status { position: fixed; right: 8px; top: 96px; font-size: 12px; color: #aaa; background: rgba(0,0,0,.6);
-    padding: 2px 8px; border-radius: 8px; pointer-events: none; }
-  #gear2 { position: fixed; left: 8px; top: 98px; width: 48px; height: 48px; border-radius: 12px;
-    border: 2px solid #777; background: rgba(0,0,0,.6); color: #fff; font-size: 24px; }
-  #tapHint { position: fixed; left: 0; right: 0; bottom: calc(22vh + 22px); text-align: center; font-size: 15px;
-    color: #ddd; pointer-events: none; text-shadow: 0 0 4px #000; }
-  #bar { position: fixed; left: 10px; right: 10px; bottom: 10px; height: 22vh; display: flex; gap: 10px; }
-  #stopBtn { flex: 1.3; border: 4px solid #fff; border-radius: 24px; background: #b71c1c; color: #fff;
-    font-size: 40px; font-weight: 900; }
-  #nearBtn { flex: 1; border: 4px solid #fff; border-radius: 24px; background: #1565c0; color: #fff;
-    font-size: 22px; font-weight: 800; line-height: 1.25; }
-  #nearBtn.off { background: #424242; color: #bbb; }
+    gap: 4px; padding: 6px; background: rgba(0,0,0,.7); pointer-events: none; }
+  .cell { border-radius: 12px; padding: 8px 4px; text-align: center; background: #1b5e20; min-height: 78px; }
+  .cell .dir { font-size: 15px; opacity: .85; }
+  .cell .val { font-size: 20px; font-weight: 800; line-height: 1.25; }
+  .cell.near { background: #e65100; }
+  .cell.danger { background: #c62828; }
+  #fps { position: fixed; top: 100px; right: 8px; font-size: 12px; color: #9e9e9e; background: rgba(0,0,0,.5);
+    padding: 2px 6px; border-radius: 6px; pointer-events: none; }
+  #alert { position: fixed; top: 124px; left: 8px; right: 8px; padding: 12px; border-radius: 12px;
+    background: #ffd600; color: #000; font-size: 22px; font-weight: 800; text-align: center; display: none; pointer-events: none; }
 
-  /* ---------- settings ---------- */
-  dialog { margin: auto; width: min(94vw, 480px); max-height: 90vh; border: 0; border-radius: 18px;
+  #controls { position: fixed; left: 10px; right: 10px; bottom: 10px; display: flex; gap: 10px; height: 36vh; }
+  #toggle { flex: 1; border: 4px solid #fff; border-radius: 24px; background: #ffd600; color: #000;
+    font: 800 42px/1.2 inherit; cursor: pointer; }
+  body.running #controls { height: 20vh; }
+  body.running #toggle { background: rgba(0,0,0,.6); color: #fff; font-size: 32px; }
+  #gear { width: 72px; border: 3px solid #888; border-radius: 20px; background: #222; color: #fff; font-size: 30px; }
+  button:focus-visible { outline: 6px solid #00e5ff; }
+  #hint { position: fixed; left: 0; right: 0; bottom: calc(36vh + 20px); text-align: center; color: #ccc;
+    font-size: 17px; padding: 0 16px; }
+  body.running #hint { display: none; }
+  #msg { position: fixed; left: 0; right: 0; top: 42%; text-align: center; font-size: 20px; padding: 0 20px; }
+
+  dialog { margin: auto; width: min(92vw, 460px); max-height: 88vh; border: 0; border-radius: 18px;
     padding: 18px; background: #161616; color: #fff; }
-  dialog::backdrop { background: rgba(0,0,0,.75); }
-  dialog h2 { font-size: 22px; margin-bottom: 6px; }
-  .sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0;
-    border-bottom: 1px solid #333; font-size: 17px; }
-  .sw input { width: 26px; height: 26px; flex: none; }
+  dialog::backdrop { background: rgba(0,0,0,.7); }
+  dialog h2 { font-size: 22px; margin-bottom: 12px; }
   dialog label { display: block; margin: 14px 0 4px; font-size: 16px; }
-  dialog input[type=range] { width: 100%; height: 30px; }
-  dialog select { width: 100%; font-size: 16px; padding: 8px; }
-  details { margin-top: 14px; border-top: 1px solid #333; padding-top: 10px; }
-  summary { font-size: 17px; padding: 6px 0; }
-  .small { font-size: 13px; color: #aaa; margin-top: 4px; }
-  .btns { display: flex; gap: 10px; margin-top: 18px; }
-  .btns button { flex: 1; padding: 14px; font-size: 17px; border-radius: 12px; border: 0; }
+  dialog input[type=range] { width: 100%; }
+  dialog .row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 16px; }
+  dialog .row input { width: 22px; height: 22px; flex: none; }
+  dialog select { width: 100%; font-size: 16px; padding: 6px; }
+  dialog .btns { display: flex; gap: 10px; margin-top: 18px; }
+  dialog .btns button { flex: 1; padding: 12px; font-size: 17px; border-radius: 12px; border: 0; }
   #calib { background: #00897b; color: #fff; }
-  #reset { background: #444; color: #fff; }
-  #close { background: #ffd600; color: #000; font-weight: 800; }
+  #close { background: #ffd600; color: #000; font-weight: 700; }
+  #calibMsg { margin-top: 8px; font-size: 14px; color: #bbb; }
+  .small { font-size: 13px; color: #aaa; }
 </style>
 </head>
 <body>
 
-<button id="view" aria-label="แตะเพื่อฟังสรุปรอบตัว" tabindex="-1">
+<button id="view" aria-label="แตะเพื่อฟังสรุปสิ่งที่อยู่รอบตัว">
   <video id="video" playsinline muted></video>
   <canvas id="canvas"></canvas>
 </button>
 
-<!-- START SCREEN -->
-<div id="startScreen">
-  <div id="title">
-    <h1>👁 ตาที่สาม</h1>
-    <p>โซนาร์ช่วยเดิน · ห้อยคอ หันกล้องไปข้างหน้า</p>
-  </div>
-  <button id="startBtn" aria-label="เริ่มใช้งาน">เริ่ม</button>
-  <p id="startNote" role="status" aria-live="polite"></p>
-  <button id="gear" aria-label="ตั้งค่า">⚙ ตั้งค่า</button>
+<div id="radar" aria-hidden="true">
+  <div class="cell" id="s0"><div class="dir">◀ ซ้าย</div><div class="val">—</div></div>
+  <div class="cell" id="s1"><div class="dir">▲ กลาง</div><div class="val">—</div></div>
+  <div class="cell" id="s2"><div class="dir">ขวา ▶</div><div class="val">—</div></div>
 </div>
+<div id="fps" aria-hidden="true"></div>
+<div id="alert" aria-hidden="true"></div>
+<p id="msg" role="status" aria-live="polite">ตาที่สาม<br>โซนาร์ช่วยเดินด้วยกล้องมือถือ</p>
+<p id="hint">ห้อยคอหรือถือระดับอก หันกล้องหลังไปข้างหน้า · ใส่หูฟังเพื่อแยกเสียงซ้าย/ขวาได้ชัด · ใช้คู่กับไม้เท้าเสมอ</p>
 
-<!-- RUNNING SCREEN -->
-<div id="runScreen">
-  <div id="radar" aria-hidden="true">
-    <div class="cell" id="s0"><div class="dir">◀ ซ้าย</div><div class="val">โล่ง</div></div>
-    <div class="cell" id="s1"><div class="dir">▲ หน้า</div><div class="val">โล่ง</div></div>
-    <div class="cell" id="s2"><div class="dir">ขวา ▶</div><div class="val">โล่ง</div></div>
-  </div>
-  <div id="status" aria-hidden="true"></div>
-  <button id="gear2" aria-label="ตั้งค่า">⚙</button>
-  <div id="say" aria-hidden="true"></div>
-  <p id="tapHint" aria-hidden="true">แตะจอเพื่อฟังสรุป</p>
-  <div id="bar">
-    <button id="stopBtn" aria-label="หยุด">หยุด</button>
-    <button id="nearBtn"></button>
-  </div>
+<div id="controls">
+  <button id="toggle" aria-label="แตะเพื่อเริ่มโซนาร์">แตะเพื่อเริ่ม</button>
+  <button id="gear" aria-label="ตั้งค่า สำหรับผู้ช่วย">⚙</button>
 </div>
 
 <dialog id="settings">
-  <h2>ตั้งค่า</h2>
-  <label>ประสิทธิภาพ</label>
-  <select id="perf">
-    <option value="light">เบา — ลื่น ไม่ค้าง (แนะนำ)</option>
-    <option value="normal">ปกติ — มือถือรุ่นกลาง</option>
-    <option value="full">เต็ม — มือถือรุ่นท็อป (จับรถไกลได้ดีสุด)</option>
-  </select>
-  <p class="small">ถ้าเครื่องร้อนหรือค้าง ให้เลือก "เบา" · โหมดเบาจะจับรถไกลเกิน 8 ม. ได้น้อยลง</p>
-  <div class="sw"><span>เตือนคนระยะใกล้ (0–2 ม.)</span><input type="checkbox" id="optNear"></div>
-  <div class="sw"><span>ตรวจจับเสาไฟและวัตถุบนทางเดิน</span><input type="checkbox" id="optPoles"></div>
-  <div class="sw"><span>เตือนวัตถุที่ไม่รู้จัก ("วัตถุ")</span><input type="checkbox" id="optUnknown"></div>
-  <div class="sw"><span>แสดงภาพกล้อง</span><input type="checkbox" id="optCam"></div>
-  <div class="sw"><span>เสียง "ทางโล่ง"</span><input type="checkbox" id="optHb"></div>
-  <div class="sw"><span>สั่นเมื่อมีของใกล้ (Android)</span><input type="checkbox" id="optVib"></div>
-  <label>ความดัง <b id="volV"></b>%</label>
+  <h2>ตั้งค่า (สำหรับผู้ช่วย)</h2>
+  <label>ระยะตรวจจับ: <b id="rangeV"></b> เมตร</label>
+  <input type="range" id="range" min="3" max="10" step="0.5">
+  <label>โซนเตรียมตัว (บอกว่าอะไรขวางทาง): <b id="prepV"></b> เมตร</label>
+  <input type="range" id="prep" min="1" max="4" step="0.5">
+  <label>ความดัง: <b id="volV"></b>%</label>
   <input type="range" id="vol" min="0.1" max="1" step="0.05">
-
-  <details>
-    <summary>ขั้นสูง (สำหรับผู้ช่วย)</summary>
-    <label>เตือนรถที่วิ่งเข้าหา/ตัดหน้า ภายใน <b id="vehV"></b> ม.</label>
-    <input type="range" id="veh" min="6" max="15" step="1">
-    <label>เตือนสิ่งกีดขวางบนทางเดิน ภายใน <b id="obsV"></b> ม.</label>
-    <input type="range" id="obs" min="3" max="10" step="0.5">
-    <label>โซนใกล้ <b id="nearV"></b> ม.</label>
-    <input type="range" id="nearZ" min="1" max="3" step="0.5">
-    <label>โซนใกล้ครอบคลุมด้านข้าง <b id="sideV"></b> ม.</label>
-    <input type="range" id="side" min="0" max="2" step="0.25">
-    <label>ความสูงของมือถือจากพื้น <b id="camV"></b> ม.</label>
-    <input type="range" id="cam" min="0.8" max="1.7" step="0.05">
-    <label>ระยะเสียงโซนาร์ <b id="sonV"></b> ม.</label>
-    <input type="range" id="son" min="4" max="12" step="0.5">
-    <label>ความเร็วที่ถือว่า "พุ่งเข้าหา" <b id="spdV"></b> ม./วิ</label>
-    <input type="range" id="spd" min="1" max="5" step="0.1">
-    <label>โมเดล AI</label>
-    <select id="model">
-      <option value="lite_mobilenet_v2">เร็ว · ลื่น (แนะนำ)</option>
-      <option value="mobilenet_v2">แม่นกว่า · อาจกระตุก (ถ้าช้าจะสลับเป็นแบบเร็วเอง)</option>
-    </select>
-    <div class="sw"><span>ซูมกลางภาพ (จับของไกล)</span><input type="checkbox" id="optZoom"></div>
-    <div class="sw"><span>WebGPU (ทดลอง · อาจค้างบางเครื่อง)</span><input type="checkbox" id="optGpu"></div>
-    <label>ปรับเทียบระยะ</label>
-    <p class="small">เริ่มใช้งานก่อน ให้คนยืนห่างกล้อง 2 เมตรตรงกลางภาพ แล้วกด "ปรับเทียบ"</p>
-    <p class="small" id="calibMsg"></p>
-    <div class="btns">
-      <button id="calib">ปรับเทียบ</button>
-      <button id="reset">ค่าเริ่มต้น</button>
-    </div>
-  </details>
-  <div class="btns"><button id="close">เสร็จ</button></div>
+  <label>พูดเตือนเมื่อพุ่งเข้าหาเร็วกว่า: <b id="spdV"></b> เมตร/วินาที</label>
+  <input type="range" id="spd" min="1" max="5" step="0.1">
+  <label>โมเดล AI</label>
+  <select id="model">
+    <option value="lite_mobilenet_v2">เร็ว (แนะนำ)</option>
+    <option value="mobilenet_v2">แม่นกว่า แต่ช้ากว่า</option>
+  </select>
+  <div class="row"><input type="checkbox" id="zoom"><span>ซูมกลางภาพเพื่อจับของไกล (7–10 ม.)</span></div>
+  <div class="row"><input type="checkbox" id="gpu"><span>เร่งความเร็วด้วย WebGPU (ถ้ามือถือรองรับ)</span></div>
+  <div class="row"><input type="checkbox" id="hb"><span>เสียง "ทางโล่ง" จังหวะปกติ เมื่อไม่พบสิ่งกีดขวาง</span></div>
+  <div class="row"><input type="checkbox" id="vib"><span>สั่นเมื่อมีของขวางในโซนเตรียมตัว (Android)</span></div>
+  <label>ปรับเทียบระยะ</label>
+  <p class="small">ให้คนหนึ่งคนยืนห่างกล้อง 2 เมตรพอดีตรงกลางภาพ (ต้องเริ่มโซนาร์ก่อน) แล้วกดปุ่มด้านล่าง</p>
+  <p id="calibMsg"></p>
+  <div class="btns">
+    <button id="calib">ปรับเทียบ (คนอยู่ 2 ม.)</button>
+    <button id="close">เสร็จ</button>
+  </div>
 </dialog>
 
 <!-- ===================== CORE LOGIC (no DOM, unit-testable) ===================== -->
 <script id="core">
 const DEFAULT_CFG = {
-  v: 7,
-  perf: 'light',          // light | normal | full
-  sonarRange: 8,          // m — beeps for anything within this distance
-  obstacleWarn: 6,        // m — say what is standing in the walking path
-  vehicleWarn: 12,        // m — say when a vehicle rushes in / cuts across
-  nearZone: 2,            // m — close zone
-  nearPerson: true,       // say "คน ข้างหน้า" for people in the close zone (on/off)
-  poles: true,            // second AI model that can see poles
-  corridor: 1.2,          // m — width of the walking path
+  v: 2,
+  range: 8,               // m — radar range (3–10)
+  prepDist: 2,            // m — "get ready" zone: say what is blocking the path
+  corridor: 1.2,          // m — width of the walking path in front of the user
   volume: 0.8,
-  approachSpeed: 2.2,     // m/s
-  ttc: 4.0,               // s
-  model: 'lite_mobilenet_v2',   // fast by default: smooth on most phones
-  zoom: true,
-  webgpu: false,          // WebGL is more stable on phones over long use
+  approachSpeed: 2.2,     // m/s closing speed that triggers "rushing in"
+  ttc: 4.0,               // s — look this far ahead for collisions / crossings
+  model: 'lite_mobilenet_v2',
+  zoom: true,             // extra detection pass on the zoomed-in center for far objects
+  webgpu: true,
   heartbeat: true,
   vibrate: true,
-  showCam: true,
-  hfovDeg: 67,
-  focalScale: 1.0,
-  camHeight: 1.3,         // m — phone hanging on the chest
-  sideWarn: 1.0,          // m — near zone also covers this much to the left/right of the path
-  unknown: true           // announce unidentified things in the path as "วัตถุ"
+  hfovDeg: 67,            // typical phone main-camera field of view along the long side
+  focalScale: 1.0,        // set by calibration
+  minScore: 0.4
 };
 
-// class -> [Thai short name (spoken), typical real height m, typical real width m]
-// Only people, vehicles and things commonly standing on Thai sidewalks.
+// COCO class -> [Thai name, typical real height (m), typical real width (m, narrowest view)]
 const OBJ = {
   person: ['คน', 1.65, 0.5],
-  bicycle: ['จักรยาน', 1.0, 0.6], car: ['รถ', 1.5, 1.75], motorcycle: ['มอไซค์', 1.15, 0.75],
+  bicycle: ['จักรยาน', 1.0, 0.6], car: ['รถยนต์', 1.5, 1.75], motorcycle: ['มอเตอร์ไซค์', 1.15, 0.75],
   bus: ['รถเมล์', 3.0, 2.5], truck: ['รถบรรทุก', 2.8, 2.3],
+  dog: ['สุนัข', 0.55, 0.3], cat: ['แมว', 0.3, 0.15],
   chair: ['เก้าอี้', 0.9, 0.5], bench: ['ม้านั่ง', 0.8, 0.5], 'dining table': ['โต๊ะ', 0.75, 0.8],
-  'potted plant': ['กระถางต้นไม้', 0.6, 0.45], umbrella: ['ร่ม', 1.0, 1.0],
-  'fire hydrant': ['หัวดับเพลิง', 0.8, 0.35], 'parking meter': ['เสา', 1.3, 0.3],
-  'stop sign': ['ป้าย', 0.75, 0.75], refrigerator: ['ตู้', 1.7, 0.7],
-  // from the street-scene model
-  pole: ['เสาไฟ', 8, 0.3],       // height unknown, so width is used
-  thing: ['วัตถุ', 1, 1], tree: ['ต้นไม้', 3, 0.5], sign: ['ป้าย', 1, 0.6], barrier: ['ที่กั้น', 1, 1]
+  couch: ['โซฟา', 0.85, 0.9], bed: ['เตียง', 0.6, 1.0], 'potted plant': ['กระถางต้นไม้', 0.6, 0.45],
+  'fire hydrant': ['หัวดับเพลิง', 0.8, 0.35], 'parking meter': ['เสามิเตอร์', 1.3, 0.3],
+  'stop sign': ['ป้าย', 0.75, 0.75], suitcase: ['กระเป๋าเดินทาง', 0.65, 0.4],
+  umbrella: ['ร่ม', 1.0, 1.0], refrigerator: ['ตู้เย็น', 1.7, 0.7], toilet: ['ชักโครก', 0.75, 0.4]
 };
 const VEHICLE = new Set(['bicycle','car','motorcycle','bus','truck']);
-const MOVING = new Set(['person', ...VEHICLE]);
-// Objects are often false positives; demand more confidence from them.
-function minScoreFor(cls) { return cls === 'person' ? 0.5 : 0.45; }
+const MOVING = new Set(['person','dog','cat', ...VEHICLE]);
+const SECTOR_NAMES = ['ซ้าย', 'กลาง', 'ขวา'];
+const SECTOR_WORDS = ['ด้านซ้าย', 'ข้างหน้า', 'ด้านขวา'];
+const KIND_NAMES = { person: 'คน', vehicle: 'ยานพาหนะ', object: 'สิ่งของ' };
+
 function kindOf(cls) { return cls === 'person' ? 'person' : VEHICLE.has(cls) ? 'vehicle' : 'object'; }
 
 function focalPx(W, H, cfg) {
   return (Math.max(W, H) / 2) / Math.tan(cfg.hfovDeg * Math.PI / 360) * cfg.focalScale;
 }
+
+// Pinhole-camera distance from known real size; keeps the closer of height/width estimates (safe side).
 function estimateDistance(cls, bbox, W, H, cfg) {
   const [, realH, realW] = OBJ[cls];
   const f = focalPx(W, H, cfg);
   return Math.min(realH * f / Math.max(1, bbox[3]), realW * f / Math.max(1, bbox[2]));
 }
+
 function sectorsOf(bbox, W) {
   const [x, , w] = bbox, s = W / 3, out = [];
   for (let i = 0; i < 3; i++) {
@@ -229,112 +164,20 @@ function sectorsOf(bbox, W) {
   if (!out.includes(c)) out.push(c);
   return out.sort();
 }
-function makeDet(cls, bbox, W, H, cfg, score = 1, ttl = 0.8, dKnown = null) {
+
+// One detection -> distance, sideways position X (m, left negative) and half-width (m).
+function makeDet(cls, bbox, W, H, cfg) {
   const [x, y, w, h] = bbox;
-  const d = dKnown ?? estimateDistance(cls, bbox, W, H, cfg), f = focalPx(W, H, cfg);
+  const d = estimateDistance(cls, bbox, W, H, cfg), f = focalPx(W, H, cfg);
   const cx = (x + w / 2) / W;
-  return { cls, bbox, d, score, ttl, src: ttl > 1 ? 'seg' : 'coco', cx, cy: (y + h / 2) / H,
+  return { cls, bbox, d, cx, cy: (y + h / 2) / H,
            X: (cx - 0.5) * W * d / f, halfW: Math.min(3, w * d / f / 2), sectors: sectorsOf(bbox, W) };
 }
 
-function iou(a, b) {
-  const x1 = Math.max(a[0], b[0]), y1 = Math.max(a[1], b[1]);
-  const x2 = Math.min(a[0] + a[2], b[0] + b[2]), y2 = Math.min(a[1] + a[3], b[1] + b[3]);
-  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
-  return inter / (a[2] * a[3] + b[2] * b[3] - inter || 1);
-}
-function mergeDets(full, zoom) {
-  const out = [...full];
-  for (const z of zoom) if (!out.some(f => f.class === z.class && iou(f.bbox, z.bbox) > 0.3)) out.push(z);
-  return out;
-}
-// A person sitting on a motorcycle/bicycle is part of the vehicle, not a separate "คน".
-function suppressRiders(preds) {
-  const rides = preds.filter(p => p.class === 'motorcycle' || p.class === 'bicycle');
-  return preds.filter(p => {
-    if (p.class !== 'person') return true;
-    const [x, y, w, h] = p.bbox;
-    return !rides.some(r => {
-      const ix = Math.max(0, Math.min(x + w, r.bbox[0] + r.bbox[2]) - Math.max(x, r.bbox[0]));
-      const iy = Math.max(0, Math.min(y + h, r.bbox[1] + r.bbox[3]) - Math.max(y, r.bbox[1]));
-      return ix * iy / (w * h) > 0.35;
-    });
-  });
-}
-
-// Street-scene segmentation -> pole boxes. labels: Int array h*w of class ids.
-function polesFromSeg(labels, w, h, poleId = 5) {
-  const cnt = new Int32Array(w), top = new Int32Array(w).fill(h), bot = new Int32Array(w).fill(-1);
-  for (let y = 0; y < h; y++) {
-    const row = y * w;
-    for (let x = 0; x < w; x++) if (labels[row + x] === poleId) {
-      cnt[x]++; if (y < top[x]) top[x] = y; if (y > bot[x]) bot[x] = y;
-    }
-  }
-  const minCnt = Math.max(3, h * 0.12), out = [];
-  let x = 0;
-  while (x < w) {
-    if (cnt[x] < minCnt) { x++; continue; }
-    let x0 = x, x1 = x, t = top[x], b = bot[x];
-    x++;
-    while (x < w) {
-      if (cnt[x] >= minCnt) { x1 = x; t = Math.min(t, top[x]); b = Math.max(b, bot[x]); x++; }
-      else if (x + 1 < w && cnt[x + 1] >= minCnt) x++;      // allow a 1-column gap
-      else break;
-    }
-    const bw = x1 - x0 + 1, bh = b - t + 1;
-    const tall = bh >= h * 0.25, thin = bw <= w * 0.25 || (bh >= h * 0.6 && bw <= w * 0.6);
-    if (tall && thin && bw >= 2) out.push({ bbox: [x0, t, bw, bh] });
-    x = x1 + 1;
-  }
-  return out;
-}
-
-// Anything standing on the walking path that is not floor, sky, a person/vehicle (the other model names those)
-// or a pole. Distance comes from where it touches the ground: d = cameraHeight · f / (pixels below horizon).
-// ids = { walk:Set, sky, skip:Set, tree:Set, sign:Set, fence:Set }
-function groundObstacles(labels, w, h, cfg, pitchDownDeg, ids) {
-  const f = focalPx(w, h, cfg);
-  const yh = h / 2 - f * Math.tan(pitchDownDeg * Math.PI / 180);   // horizon row
-  const half = cfg.corridor / 2, maxD = cfg.obstacleWarn + 2;
-  const isBad = lab => !ids.walk.has(lab) && lab !== ids.sky && !ids.skip.has(lab);
-  let run = 0, start = -1, x0s = 0, x1s = 0;
-  for (let y = h - 1; y > yh + 2; y--) {
-    const dy = cfg.camHeight * f / (y - yh);
-    if (dy > maxD) break;
-    const hw = half * f / dy;
-    const x0 = Math.max(0, Math.round(w / 2 - hw)), x1 = Math.min(w - 1, Math.round(w / 2 + hw));
-    let bad = 0, tot = 0;
-    for (let x = x0; x <= x1; x++) { tot++; if (isBad(labels[y * w + x])) bad++; }
-    if (tot >= 3 && bad / tot > 0.5) {
-      if (++run === 1) { start = y; x0s = x0; x1s = x1; }
-      if (run >= 4) {
-        // found: measure how tall it is and what it mostly looks like
-        const cnt = {};
-        let top = start;
-        for (let yy = start; yy >= 0; yy--) {
-          let b2 = 0, t2 = 0;
-          for (let x = x0s; x <= x1s; x++) {
-            const lab = labels[yy * w + x]; t2++;
-            if (isBad(lab)) { b2++; cnt[lab] = (cnt[lab] || 0) + 1; }
-          }
-          if (b2 / t2 < 0.3) break;
-          top = yy;
-        }
-        const major = +Object.keys(cnt).reduce((a, b) => cnt[a] >= cnt[b] ? a : b);
-        const cls = ids.tree.has(major) ? 'tree' : ids.sign.has(major) ? 'sign' :
-                    ids.fence && ids.fence.has(major) ? 'barrier' : 'thing';
-        const d = cfg.camHeight * f / (start - yh);
-        return [{ cls, d, bbox: [x0s, top, x1s - x0s + 1, start - top + 1] }];
-      }
-    } else run = 0;
-  }
-  return [];
-}
-
-function regress(hist, k, minN = 4) {
+// Least-squares slope of column k against time (column 0).
+function regress(hist, k) {
   const n = hist.length;
-  if (n < minN || n < 2 || hist[n - 1][0] - hist[0][0] < 0.4) return 0;
+  if (n < 4 || hist[n - 1][0] - hist[0][0] < 0.4) return 0;
   let mt = 0, mv = 0;
   for (const h of hist) { mt += h[0]; mv += h[k]; }
   mt /= n; mv /= n;
@@ -343,60 +186,39 @@ function regress(hist, k, minN = 4) {
   return den ? num / den : 0;
 }
 
-// Tracker with class voting: the label of a track is what it has been called most often lately,
-// so a person who is briefly mis-detected as a chair keeps being "คน".
 class Tracker {
-  constructor() { this.tracks = []; this.nextId = 1; this.memo = {}; }
-  update(dets, t, segRan = false) {
+  constructor() { this.tracks = []; this.nextId = 1; }
+  update(dets, t) {
     const used = new Set();
     for (const det of [...dets].sort((a, b) => a.d - b.d)) {
-      let best = null, bestDist = 1e9;
+      let best = null, bestDist = 0.25;
       for (const tr of this.tracks) {
-        if (used.has(tr)) continue;
-        if (tr.src !== det.src) continue;
-        const same = tr.votes[det.cls] > 0;
+        if (used.has(tr) || tr.cls !== det.cls) continue;
         const dd = Math.hypot(tr.cx - det.cx, tr.cy - det.cy);
-        const ok = dd < (same ? 0.25 : 0.1) || iou(tr.bbox, det.bbox) > (same ? 0.3 : 0.5);
-        if (ok && dd < bestDist) { best = tr; bestDist = dd; }
+        if (dd < bestDist) { best = tr; bestDist = dd; }
       }
       if (!best) {
-        best = { id: this.nextId++, votes: {}, hits: 0, hist: [], d: det.d, X: det.X, speed: 0, vx: 0,
-                 fast: 0, crossN: 0, approachAt: -1e9, crossAt: -1e9, nearAt: -1e9,
-                 nearDone: false, aheadDone: false, inPath: false, crossing: false };
+        best = { id: this.nextId++, cls: det.cls, name: OBJ[det.cls][0], kind: kindOf(det.cls),
+                 hist: [], d: det.d, X: det.X, speed: 0, vx: 0, fast: 0, crossN: 0,
+                 alertedAt: -1e9, crossAt: -1e9, prepDone: false, inPath: false, crossing: false };
         this.tracks.push(best);
       } else {
-        const a = det.ttl > 1 ? 0.85 : 0.6;     // sparse (pole) updates: trust the new reading more
-        best.d = a * det.d + (1 - a) * best.d;
-        best.X = a * det.X + (1 - a) * best.X;
+        best.d = 0.6 * det.d + 0.4 * best.d;
+        best.X = 0.6 * det.X + 0.4 * best.X;
       }
       used.add(best);
-      for (const k in best.votes) best.votes[k] *= 0.8;
-      best.votes[det.cls] = (best.votes[det.cls] || 0) + det.score;
-      best.cls = Object.keys(best.votes).reduce((a, b) => best.votes[a] >= best.votes[b] ? a : b);
-      best.name = OBJ[best.cls][0]; best.kind = kindOf(best.cls);
-      best.hits++;
-      best.minHits = det.src === 'seg' ? 1 : 2;
-      best.src = det.src;
-      Object.assign(best, { cx: det.cx, cy: det.cy, bbox: det.bbox, halfW: det.halfW,
-                            sectors: det.sectors, last: t, ttl: det.ttl });
-      const sparse = det.ttl > 1;
+      Object.assign(best, { cx: det.cx, cy: det.cy, bbox: det.bbox, halfW: det.halfW, sectors: det.sectors, last: t });
       best.hist.push([t, best.d, best.X]);
-      while (best.hist.length && t - best.hist[0][0] > (sparse ? Math.max(3.5, det.ttl * 1.4) : 1.2)) best.hist.shift();
-      best.speed = -regress(best.hist, 1, sparse ? 2 : 4);
-      best.vx = regress(best.hist, 2, sparse ? 2 : 4);
+      while (best.hist.length && t - best.hist[0][0] > 1.2) best.hist.shift();
+      best.speed = -regress(best.hist, 1);   // closing speed, + = coming closer
+      best.vx = regress(best.hist, 2);       // sideways speed, + = moving right
     }
-    this.tracks = this.tracks.filter(tr => t - tr.last < tr.ttl && !(segRan && tr.src === 'seg' && !used.has(tr)));
-    this.refresh(t);
+    this.tracks = this.tracks.filter(tr => t - tr.last < 0.8);
   }
-  // Between sparse updates, move the distance on by the closing speed (you keep walking toward a pole).
-  refresh(t) {
-    for (const tr of this.tracks)
-      tr.dNow = Math.max(0.3, tr.d - Math.min(2, Math.max(0, tr.speed)) * Math.min(1.5, t - tr.last));
-  }
-  // confirmed tracks that are still fresh
-  live(t) { return this.tracks.filter(tr => tr.hits >= tr.minHits && t - tr.last <= (tr.src === 'seg' ? tr.ttl * 0.9 : 0.45)); }
+  live(t, maxAge = 0.5) { return this.tracks.filter(tr => t - tr.last <= maxAge); }
 }
 
+// Is it in my walking corridor now, or moving sideways into it soon?
 function pathInfo(tr, cfg) {
   const half = cfg.corridor / 2 + tr.halfW;
   const inPath = Math.abs(tr.X) < half;
@@ -409,96 +231,85 @@ function pathInfo(tr, cfg) {
   return { inPath, crossing };
 }
 
-// Spoken-warning candidates, most important first:
-// 0 rushing in · 1 cutting across · 2 close zone · 3 obstacle standing in the path
-function decideAlerts(tracker, t, cfg) {
-  const out = [], memo = tracker.memo;
-  for (const tr of tracker.tracks) {
-    const fresh = tr.last === t;
-    const d = tr.dNow ?? tr.d;
-    if (fresh) {                                    // motion only changes when we get a new sighting
-      const { inPath, crossing } = pathInfo(tr, cfg);
-      tr.inPath = inPath; tr.crossing = crossing;
-      tr.crossN = crossing ? tr.crossN + 1 : 0;
-      const veh = tr.kind === 'vehicle';
-      const reach = veh ? cfg.vehicleWarn : cfg.sonarRange;
-      const thr = cfg.approachSpeed * (tr.d > 6 ? 1.3 : 1) * (tr.kind === 'person' ? 1.45 : 1);
-      // count "fast" sightings even a bit beyond range, so the warning is ready the moment it enters
-      const fast = MOVING.has(tr.cls) && tr.d <= reach * 1.5 && tr.speed >= thr &&
-                   tr.d / tr.speed <= cfg.ttc * 1.5 && (tr.inPath || crossing);
-      tr.fast = fast ? tr.fast + 1 : 0;
-      tr.reach = reach;
-    }
-    if (d > cfg.nearZone + 1) tr.nearDone = false;
-    if (d > cfg.obstacleWarn + 2.5) tr.aheadDone = false;
-    if (tr.hits < tr.minHits + 1 || t - tr.last > Math.max(0.5, tr.ttl * 0.9)) continue;
-    // warn a little early: slow-updating things (poles) get ~1.2 s of lead, others ~0.3 s
-    const dLead = d - Math.min(1.5, Math.max(0, tr.speed) * (tr.src === 'seg' ? 1.2 : 0.3));
-
-    if (fresh && tr.fast >= 2 && tr.d <= tr.reach && t - tr.approachAt > 4)
+// Decide spoken warnings. Priority: rushing in > crossing my path > blocking within the get-ready zone.
+function decideAlerts(tracks, t, cfg) {
+  const out = [];
+  for (const tr of tracks) {
+    if (tr.last !== t) continue;
+    const { inPath, crossing } = pathInfo(tr, cfg);
+    tr.inPath = inPath; tr.crossing = crossing;
+    tr.crossN = crossing ? tr.crossN + 1 : 0;
+    if (tr.d > cfg.prepDist + 1) tr.prepDone = false;
+    if (tr.d > cfg.range) { tr.fast = 0; continue; }
+    // far estimates are noisier; people walking toward each other (~2.6 m/s together) is normal, not "rushing"
+    const thr = cfg.approachSpeed * (tr.d > 5 ? 1.3 : 1) * (tr.kind === 'person' ? 1.45 : 1);
+    const fast = MOVING.has(tr.cls) && tr.speed >= thr && tr.d / tr.speed <= cfg.ttc && (inPath || crossing);
+    tr.fast = fast ? tr.fast + 1 : 0;
+    if (tr.fast >= 2 && t - tr.alertedAt > 4) {
+      tr.alertedAt = t; tr.crossAt = t; tr.prepDone = true;
       out.push({ type: 'approach', pri: 0, tr });
-    else if (fresh && tr.crossN >= 2 && tr.d <= tr.reach && t - tr.crossAt > 5 && t - tr.approachAt > 3)
+    } else if (tr.crossN >= 2 && t - tr.crossAt > 5 && t - tr.alertedAt > 3) {
+      tr.crossAt = t;
       out.push({ type: 'cross', pri: 1, tr });
-    else if (Math.abs(tr.X) < cfg.corridor / 2 + tr.halfW + cfg.sideWarn && dLead <= cfg.nearZone && t - tr.approachAt > 4) {
-      if (tr.kind === 'person') {
-        if (cfg.nearPerson && t - tr.nearAt > 4 && t - (memo.nearPerson || -1e9) > 4) out.push({ type: 'near', pri: 2, tr });
-      } else if (t - tr.nearAt > 6) out.push({ type: 'near', pri: 2, tr });
+    } else if (inPath && tr.d <= cfg.prepDist && !tr.prepDone && t - tr.alertedAt > 4) {
+      tr.prepDone = true;
+      out.push({ type: 'prep', pri: 2, tr });
     }
-    else if (tr.inPath && tr.kind !== 'person' && d <= cfg.obstacleWarn + 0.3 && !tr.aheadDone && t - tr.approachAt > 4)
-      out.push({ type: 'ahead', pri: 3, tr });
   }
-  return out.sort((a, b) => a.pri - b.pri || (a.tr.nearAt > -1e8) - (b.tr.nearAt > -1e8) ||
-                           (a.tr.dNow ?? a.tr.d) - (b.tr.dNow ?? b.tr.d));
-}
-// Call after an alert was actually spoken, so nothing is silently lost.
-function markAlert(a, t, tracker) {
-  const tr = a.tr;
-  if (a.type === 'approach') { tr.approachAt = t; tr.crossAt = t; tr.aheadDone = true; tr.nearDone = true; }
-  else if (a.type === 'cross') tr.crossAt = t;
-  else if (a.type === 'near') {
-    tr.nearAt = t; tr.nearDone = true; tr.aheadDone = true;
-    if (tr.kind === 'person' && tracker) tracker.memo.nearPerson = t;
-  }
-  else tr.aheadDone = true;
+  return out.sort((a, b) => a.pri - b.pri || a.tr.d - b.tr.d);
 }
 
-function side(X) { return X < -0.6 ? 'ทางซ้าย' : X > 0.6 ? 'ทางขวา' : 'ข้างหน้า'; }
-// Short and clear: name · direction · distance.
+function speakDist(d) { return d < 1 ? 'ไม่ถึง 1 เมตร' : `${Math.round(d)} เมตร`; }
+function showDist(d) { return d < 10 ? d.toFixed(1) : Math.round(d).toString(); }
+function sideWord(X) { return SECTOR_WORDS[X < -0.6 ? 0 : X > 0.6 ? 2 : 1]; }
+
 function alertText(a) {
-  const tr = a.tr, n = tr.name, d = tr.dNow ?? tr.d;
-  if (a.type === 'approach') return `ระวัง${n}${side(tr.X)} ${speakDist(d)}`;
-  if (a.type === 'cross') return `${n}ตัดหน้า ${tr.X < 0 ? 'จากซ้าย' : 'จากขวา'} ${speakDist(d)}`;
-  return `${n}${side(tr.X)} ${speakDist(d)}`;
+  const tr = a.tr, d = speakDist(tr.d);
+  if (a.type === 'approach')
+    return `ระวัง ${tr.name} ${tr.kind === 'person' ? 'เดินเข้ามาเร็ว' : 'พุ่งเข้ามา'} ${sideWord(tr.X)} ${d}`;
+  if (a.type === 'cross') return `${tr.name} กำลังตัดผ่าน จาก${tr.X < 0 ? 'ซ้าย' : 'ขวา'} ${d}`;
+  return `${tr.name} ขวางทาง ${d}`;
 }
 
+// Nearest tracked thing in each sector within range.
 function sectorState(tracks, range) {
   const st = [null, null, null];
   for (const o of tracks) {
-    const d = o.dNow ?? o.d;
-    if (d > range) continue;
+    if (o.d > range) continue;
     for (const i of o.sectors)
-      if (!st[i] || d < st[i].d) st[i] = { d, kind: o.kind, name: o.name, inPath: o.inPath };
+      if (!st[i] || o.d < st[i].d) st[i] = { d: o.d, kind: o.kind, name: o.name, inPath: o.inPath };
   }
   return st;
 }
+
+// Beep spacing: ~0.07 s (almost continuous) when very close, ~0.9 s at the edge of range.
 function beepInterval(d, range) {
   const k = Math.min(1, Math.max(0, (d - 0.7) / Math.max(0.1, range - 0.7)));
   return 0.07 + 0.83 * Math.pow(k, 1.2);
 }
-function speakDist(d) { return d < 0.75 ? 'ครึ่งเมตร' : `${Math.round(d)} เมตร`; }
-function showDist(d) { return d < 10 ? d.toFixed(1) : Math.round(d).toString(); }
+
+function iou(a, b) {
+  const x1 = Math.max(a[0], b[0]), y1 = Math.max(a[1], b[1]);
+  const x2 = Math.min(a[0] + a[2], b[0] + b[2]), y2 = Math.min(a[1] + a[3], b[1] + b[3]);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  return inter / (a[2] * a[3] + b[2] * b[3] - inter || 1);
+}
+// Add zoom-pass detections that the full-frame pass missed.
+function mergeDets(full, zoom) {
+  const out = [...full];
+  for (const z of zoom) if (!out.some(f => f.class === z.class && iou(f.bbox, z.bbox) > 0.3)) out.push(z);
+  return out;
+}
 
 if (typeof module !== 'undefined') module.exports = {
-  DEFAULT_CFG, OBJ, kindOf, minScoreFor, focalPx, estimateDistance, sectorsOf, makeDet, iou, mergeDets,
-  suppressRiders, polesFromSeg, groundObstacles, regress, Tracker, pathInfo, decideAlerts, markAlert, alertText,
-  sectorState, beepInterval, speakDist
+  DEFAULT_CFG, OBJ, kindOf, focalPx, estimateDistance, sectorsOf, makeDet, regress, Tracker,
+  pathInfo, decideAlerts, alertText, sectorState, beepInterval, iou, mergeDets, speakDist
 };
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgpu@4.22.0/dist/tf-backend-webgpu.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/deeplab@0.2.2/dist/deeplab.min.js"></script>
 
 <!-- ===================== APP ===================== -->
 <script>
@@ -506,45 +317,38 @@ let cfg = { ...DEFAULT_CFG };
 try {
   const saved = JSON.parse(localStorage.getItem('third-eye-cfg') || '{}');
   if (saved.v === DEFAULT_CFG.v) Object.assign(cfg, saved);
-  else if (saved.focalScale) cfg.focalScale = saved.focalScale;
+  else if (saved.focalScale) cfg.focalScale = saved.focalScale;   // keep calibration from older version
 } catch (_) {}
 function saveCfg() { try { localStorage.setItem('third-eye-cfg', JSON.stringify(cfg)); } catch (_) {} }
 
 const $ = id => document.getElementById(id);
 const video = $('video'), canvas = $('canvas'), ctx = canvas.getContext('2d');
+const msg = $('msg'), alertEl = $('alert'), fpsEl = $('fps');
 
-let model = null, modelKey = null, segModel = null, segState = 'off';
-let running = false, stream = null, wakeLock = null;
+let model = null, modelKey = null, running = false, stream = null, wakeLock = null;
 let tracker = new Tracker(), lastDets = [], sectors = [null, null, null], frame = 0;
-let cocoMs = 0, segMs = 0, lastSeg = 0, autoLite = false, runStart = 0;
 
 // ---------- Speech ----------
-let thaiVoice = null, speakingPri = 9, speakStart = 0;
+let thaiVoice = null;
 function pickVoice() {
   thaiVoice = speechSynthesis.getVoices().find(v => (v.lang || '').toLowerCase().startsWith('th')) || null;
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-function say(text, pri = 5) {           // returns true if it will be spoken
-  if (!('speechSynthesis' in window)) return false;
-  // Some phones leave speech stuck "speaking" forever — reset it after 5 s.
-  if ((speechSynthesis.speaking || speechSynthesis.pending) && performance.now() - speakStart > 5000) {
-    speechSynthesis.cancel(); speakingPri = 9; sonar.duck(false);
-  }
-  if (speechSynthesis.speaking || speechSynthesis.pending) {
-    if (pri >= speakingPri) return false;
-    speechSynthesis.cancel();
-  }
-  speakStart = performance.now();
+let speakingPri = 9;
+function say(text, pri = 5) {           // lower pri number = more important
+  if (!('speechSynthesis' in window)) return;
+  if (speechSynthesis.speaking) { if (pri >= speakingPri) return; speechSynthesis.cancel(); }
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'th-TH'; if (thaiVoice) u.voice = thaiVoice; u.rate = 1.35;
+  u.lang = 'th-TH'; if (thaiVoice) u.voice = thaiVoice; u.rate = pri === 0 ? 1.35 : 1.2;
   speakingPri = pri;
   u.onstart = () => sonar.duck(true);
   u.onend = u.onerror = () => { speakingPri = 9; sonar.duck(false); };
   speechSynthesis.speak(u);
-  return true;
 }
 
 // ---------- Sonar audio ----------
+// Person = high clear "ติ๊ด" (sine) · Vehicle = falling "ปิ้ว" (sawtooth sweep) · Object = low buzzy "ตึ๊ด" (square)
+// Left/right = stereo pan + slightly lower/higher pitch. Path clear = soft slow "ป๊อก".
 const sonar = {
   ac: null, master: null, last: [-1, -1, -1], lastHb: -1, timer: null,
   PAN: [-0.9, 0, 0.9], PITCH: [0.84, 1, 1.19],
@@ -587,11 +391,11 @@ const sonar = {
       if (!s) { this.last[i] = -1; continue; }
       any = true;
       if (this.last[i] < 0) this.last[i] = now - 10 + i * 0.05;
-      const next = Math.max(now, this.last[i] + beepInterval(s.d, cfg.sonarRange));
+      const next = Math.max(now, this.last[i] + beepInterval(s.d, cfg.range));
       if (next < now + LOOK) {
         this.beep(i, s.kind, next);
         this.last[i] = next;
-        if (i === 1 && cfg.vibrate && s.d <= cfg.nearZone && navigator.vibrate)
+        if (i === 1 && cfg.vibrate && s.d <= cfg.prepDist && navigator.vibrate)
           setTimeout(() => navigator.vibrate(35), (next - now) * 1000);
       }
     }
@@ -605,220 +409,92 @@ const sonar = {
   stop() { clearInterval(this.timer); this.timer = null; }
 };
 
-// ---------- AI setup ----------
-function tuneTF() {
-  try { tf.env().set('WEBGL_DELETE_TEXTURE_THRESHOLD', 64 * 1024 * 1024); } catch (_) {}
-  try { tf.env().set('WEBGL_PACK', true); } catch (_) {}
-}
+// ---------- AI setup: fastest backend that works ----------
 async function setBackend(name) {
   try { return (await tf.setBackend(name)) && (await tf.ready(), tf.getBackend() === name); } catch (_) { return false; }
 }
-async function loadModel(base) {
+async function loadModel() {
   const want = cfg.webgpu && navigator.gpu ? ['webgpu', 'webgl'] : ['webgl'];
   const warm = document.createElement('canvas'); warm.width = 320; warm.height = 240;
-  tuneTF();
   for (const b of [...want, 'cpu']) {
-    if (tf.getBackend() !== b && !(await setBackend(b))) continue;
+    if (!(await setBackend(b))) continue;
     try {
-      const m = await cocoSsd.load({ base });
-      await m.detect(warm);
+      const m = await cocoSsd.load({ base: cfg.model });
+      await m.detect(warm);                 // warm-up: compiles GPU programs now, not mid-walk
       return m;
     } catch (e) { console.warn('backend failed', b, e); }
   }
   throw new Error('load model failed');
 }
-// Pole model loads in the background; the app works without it.
-async function loadSeg() {
-  if (segModel || segState === 'loading' || typeof deeplab === 'undefined') {
-    if (typeof deeplab === 'undefined') segState = 'fail';
-    return;
-  }
-  segState = 'loading';
-  try {
-    const m = await deeplab.load({ base: 'cityscapes', quantizationBytes: 2 });
-    const warm = document.createElement('canvas'); warm.width = 160; warm.height = 90;
-    tf.dispose(m.predict(warm));
-    segModel = m; segState = 'on';
-  } catch (e) { console.warn('pole model failed', e); segState = 'fail'; }
-}
-// Label ids of the street-scene model, looked up by name.
-let SEG = null;
-function segIds() {
-  let L = [];
-  try { L = deeplab.getLabels('cityscapes'); } catch (_) {}
-  if (!L || L.length < 19) L = ['road','sidewalk','building','wall','fence','pole','traffic light','traffic sign',
-    'vegetation','terrain','sky','person','rider','car','truck','bus','train','motorcycle','bicycle'];
-  const id = n => L.indexOf(n);
-  return {
-    pole: id('pole'), sky: id('sky'),
-    walk: new Set(['road', 'sidewalk', 'terrain'].map(id)),
-    skip: new Set(['person','rider','car','truck','bus','train','motorcycle','bicycle','pole'].map(id)),
-    tree: new Set([id('vegetation')]), sign: new Set([id('traffic sign'), id('traffic light')]),
-    fence: new Set([id('fence')])
-  };
-}
-// Phone tilt: how far the camera looks down (degrees). Phone upright in portrait = beta 90.
-let pitchDown = 5;
-function onOrient(e) {
-  if (e.beta == null) return;
-  const portrait = (screen.orientation?.angle ?? window.orientation ?? 0) % 180 === 0;
-  const raw = portrait ? 90 - e.beta : 90 - Math.abs(e.gamma);
-  pitchDown = 0.8 * pitchDown + 0.2 * Math.max(-30, Math.min(70, raw));
-}
-async function startOrientation() {
-  try {
-    if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission)
-      await DeviceOrientationEvent.requestPermission();     // iPhone asks once
-  } catch (_) {}
-  window.addEventListener('deviceorientation', onOrient);
-}
 
-async function detectSeg(W, H) {
-  const t0 = performance.now();
-  let out;
-  try {
-    out = tf.tidy(() => {
-      const img = tf.browser.fromPixels(video);
-      const [vh, vw] = img.shape, r = P().segSize / Math.max(vh, vw);
-      const small = tf.image.resizeBilinear(img, [Math.round(vh * r), Math.round(vw * r)]);
-      return tf.squeeze(segModel.model.execute(tf.expandDims(small)));
-    });
-  } catch (e) { out = segModel.predict(video); }          // fallback: library's own (larger) input
-  const [h, w] = out.shape;
-  const labels = await out.data();
-  out.dispose();
-  segMs = segMs ? 0.7 * segMs + 0.3 * (performance.now() - t0) : performance.now() - t0;
-  SEG = SEG || segIds();
-  const sx = W / w, sy = H / h, scale = b => [b[0] * sx, b[1] * sy, b[2] * sx, b[3] * sy];
-  const ttl = Math.max(2.5, Math.max(P().segEvery, segMs * 4) * 1.6 / 1000);
-  const dets = polesFromSeg(labels, w, h, SEG.pole).map(p => makeDet('pole', scale(p.bbox), W, H, cfg, 0.7, ttl));
-  if (cfg.unknown)
-    for (const g of groundObstacles(labels, w, h, cfg, pitchDown, SEG))
-      dets.push(makeDet(g.cls, scale(g.bbox), W, H, cfg, 0.6, ttl, g.d));
-  return dets;
-}
-
-// Zoomed center pass for far objects.
+// ---------- Zoom pass: detect on the enlarged center so far objects (7–10 m) are big enough ----------
 const zc = document.createElement('canvas'), zctx = zc.getContext('2d');
 async function detectZoom(W, H) {
   const cw = Math.round(W * 0.5), ch = Math.round(H * 0.5);
   const x0 = Math.round((W - cw) / 2), y0 = Math.round((H - ch) / 2);
   if (zc.width !== cw || zc.height !== ch) { zc.width = cw; zc.height = ch; }
   zctx.drawImage(video, x0, y0, cw, ch, 0, 0, cw, ch);
-  const preds = await model.detect(zc, 20, 0.4);
+  const preds = await model.detect(zc, 20, cfg.minScore);
   return preds
     .filter(p => { const [x, y, w, h] = p.bbox; return x > 3 && y > 3 && x + w < cw - 3 && y + h < ch - 3; })
     .map(p => ({ ...p, bbox: [p.bbox[0] + x0, p.bbox[1] + y0, p.bbox[2], p.bbox[3]] }));
 }
 
-// ---------- Performance modes ----------
-// light: for most phones · normal: mid-range · full: flagship
-const PERF = {
-  light:  { every: 200, zoomEvery: 0, segEvery: 3000, segSize: 193, cam: [480, 360], fpsCam: 15 },
-  normal: { every: 125, zoomEvery: 4, segEvery: 2000, segSize: 257, cam: [640, 480], fpsCam: 24 },
-  full:   { every: 100, zoomEvery: 3, segEvery: 1500, segSize: 321, cam: [640, 480], fpsCam: 30 }
-};
-const P = () => PERF[cfg.perf] || PERF.light;
-
 // ---------- Main loop ----------
-let fpsN = 0, fpsT = performance.now(), fps = 0, slowFrames = 0, shed = 0;
+let fpsN = 0, fpsT = performance.now();
 async function loop() {
   if (!running) return;
-  const loopStart = performance.now();
-  // Every tensor made this frame is freed at endScope — no slow memory leak.
-  // (Skipped while the street model is still loading, so its weights are never swept away.)
-  const scoped = segState !== 'loading';
-  if (scoped) tf.engine().startScope();
   try {
     if (video.readyState >= 2) {
       const W = video.videoWidth, H = video.videoHeight;
       if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
-
-      const t0 = performance.now();
-      let preds = await model.detect(video, 20, 0.4);
-      if (cfg.zoom && shed < 1 && P().zoomEvery && frame % P().zoomEvery === 0) preds = mergeDets(preds, await detectZoom(W, H));
-      cocoMs = cocoMs ? 0.8 * cocoMs + 0.2 * (performance.now() - t0) : performance.now() - t0;
+      let preds = await model.detect(video, 20, cfg.minScore);
+      if (cfg.zoom && frame % 3 === 0) preds = mergeDets(preds, await detectZoom(W, H));
       frame++;
-      preds = suppressRiders(preds.filter(p => OBJ[p.class] && p.score >= minScoreFor(p.class)));
-      let dets = preds.map(p => makeDet(p.class, p.bbox, W, H, cfg, p.score));
-
-      // street model (poles / unknown objects): slower, so about once every 1.5 s
-      const segEvery = Math.max(P().segEvery, segMs * 4) * (shed >= 2 ? 2 : 1);
-      let segRan = false;
-      if (cfg.poles && segModel && performance.now() - lastSeg > segEvery) {
-        lastSeg = performance.now();
-        try { dets = dets.concat(await detectSeg(W, H)); segRan = true; }
-        catch (e) { console.warn(e); segModel = null; segState = 'fail'; }
-      }
-
       const t = performance.now() / 1000;
-      tracker.update(dets, t, segRan);
+      const dets = preds.filter(p => OBJ[p.class]).map(p => makeDet(p.class, p.bbox, W, H, cfg));
+      tracker.update(dets, t);
       lastDets = dets;
 
-      const alerts = decideAlerts(tracker, t, cfg);
-      for (const a of alerts) { if (announce(a)) { markAlert(a, t, tracker); break; } }
+      const alerts = decideAlerts(tracker.tracks, t, cfg);
+      if (alerts.length) announce(alerts[0]);
 
       const live = tracker.live(t);
-      sectors = sectorState(live, cfg.sonarRange);
-      if (cfg.showCam) draw(live, W, H);
+      sectors = sectorState(live, cfg.range);
+      draw(live, W, H);
       updateRadar();
-      updateStatus();
+
+      fpsN++;
+      const now = performance.now();
+      if (now - fpsT > 1000) {
+        fpsEl.textContent = `${(fpsN * 1000 / (now - fpsT)).toFixed(1)} fps · ${tf.getBackend()}`;
+        fpsN = 0; fpsT = now;
+      }
     }
   } catch (e) { console.error(e); }
-  if (scoped) tf.engine().endScope();
-
-  // Phone getting hot / slow? shed load step by step instead of freezing.
-  const spent = performance.now() - loopStart;
-  slowFrames = spent > 400 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
-  if (slowFrames > 8 && shed < 2) { shed++; slowFrames = 0; }
-  if (performance.now() - runStart > 6000) await maybeGoLite();
-  setTimeout(loop, Math.max(20, P().every - spent));   // capped rate: leaves room for camera preview & sound
+  setTimeout(loop, 0);
 }
 
-// Too slow with the accurate model? switch to the fast one automatically.
-async function maybeGoLite() {
-  if (autoLite || cfg.model !== 'mobilenet_v2' || performance.now() - runStart < 6000) return;
-  if (cocoMs < 150) return;
-  autoLite = true;
-  showSay('สลับเป็นโหมดเร็ว', false);
-  model = await loadModel('lite_mobilenet_v2');
-  modelKey = 'lite_mobilenet_v2|' + cfg.webgpu;
-}
-
-function updateStatus() {
-  fpsN++;
-  const now = performance.now();
-  if (now - fpsT < 1000) return;
-  fps = fpsN * 1000 / (now - fpsT); fpsN = 0; fpsT = now;
-  const pole = { on: 'เสา/วัตถุ ✓', loading: 'เสา/วัตถุ…', fail: 'เสา/วัตถุ ✗', off: '' }[cfg.poles ? segState : 'off'];
-  const mem = tf.memory();
-  $('status').textContent = `AI ${fps.toFixed(1)}/วิ · ${tf.getBackend()} · ${autoLite || cfg.model === 'lite_mobilenet_v2' ? 'เร็ว' : 'แม่น'} ${pole}` +
-    ` · T${mem.numTensors} · ${{ light: 'เบา', normal: 'ปกติ', full: 'เต็ม' }[cfg.perf]}${shed ? ' · ลดภาระ' + shed : ''}`;
-}
-
-let sayTimer = null;
-function showSay(text, urgent) {
-  const el = $('say');
-  el.textContent = text;
-  el.className = urgent ? 'urgent' : '';
-  el.style.display = 'block';
-  clearTimeout(sayTimer);
-  sayTimer = setTimeout(() => el.style.display = 'none', 2500);
-}
+let alertTimer = null;
 function announce(a) {
   const text = alertText(a);
-  if (!say(text, a.pri)) return false;
-  showSay(text, a.pri <= 1);
+  say(text, a.pri);
+  alertEl.textContent = (a.pri === 0 ? '⚠ ' : a.pri === 1 ? '↔ ' : '⛔ ') + text;
+  alertEl.style.background = a.pri === 0 ? '#ff1744' : '#ffd600';
+  alertEl.style.color = a.pri === 0 ? '#fff' : '#000';
+  alertEl.style.display = 'block';
+  clearTimeout(alertTimer);
+  alertTimer = setTimeout(() => alertEl.style.display = 'none', 3000);
   if (cfg.vibrate && navigator.vibrate)
-    navigator.vibrate(a.pri === 0 ? [300, 100, 300, 100, 300] : a.pri === 1 ? [200, 100, 200] : [250]);
-  return true;
+    navigator.vibrate(a.pri === 0 ? [300, 100, 300, 100, 300] : a.pri === 1 ? [200, 100, 200] : [400]);
 }
 
 function updateRadar() {
   for (let i = 0; i < 3; i++) {
     const cell = $('s' + i), s = sectors[i];
-    cell.querySelector('.val').innerHTML = s ? `${s.name}<br>${showDist(s.d)} ม.` : 'โล่ง';
-    cell.className = 'cell' + (s ? (s.d <= cfg.nearZone ? ' near' : ' mid') : '');
+    cell.querySelector('.val').innerHTML = s
+      ? `${s.name}<br>${showDist(s.d)} ม.${s.inPath ? ' ⛔' : ''}` : 'โล่ง';
+    cell.className = 'cell' + (s ? (s.d <= cfg.prepDist ? ' danger' : ' near') : '');
   }
 }
 
@@ -826,86 +502,69 @@ const KIND_COLOR = { person: '#00e5ff', vehicle: '#e040fb', object: '#ff9100' };
 function draw(tracks, W, H) {
   ctx.clearRect(0, 0, W, H);
   ctx.lineWidth = 2; ctx.setLineDash([10, 10]);
-  ctx.strokeStyle = 'rgba(255,255,255,.3)';
+  ctx.strokeStyle = 'rgba(255,255,255,.35)';
   for (const x of [W / 3, 2 * W / 3]) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  if (cfg.zoom) { ctx.strokeStyle = 'rgba(255,255,0,.25)'; ctx.strokeRect(W / 4, H / 4, W / 2, H / 2); }
   ctx.setLineDash([]);
   const fs = Math.max(16, W / 32);
   ctx.lineWidth = Math.max(3, W / 220);
   ctx.font = `bold ${fs}px system-ui, sans-serif`;
-  const now = performance.now() / 1000;
   for (const o of tracks) {
-    if (o.src !== 'seg' && now - o.last > 0.3) continue;      // not seen in the last frames: don't draw
     const [x, y, w, h] = o.bbox;
-    const d = o.dNow ?? o.d;
-    ctx.setLineDash(o.src === 'seg' && now - o.last > 0.5 ? [12, 8] : []);
-    const danger = o.fast >= 2 || (o.inPath && d <= cfg.nearZone);
-    const color = danger ? '#ff1744' : d > cfg.sonarRange ? 'rgba(170,170,170,.8)' : KIND_COLOR[o.kind];
+    const out = o.d > cfg.range;
+    const color = out ? 'rgba(160,160,160,.7)' : (o.inPath && o.d <= cfg.prepDist) || o.fast >= 2 ? '#ff1744' : KIND_COLOR[o.kind];
     ctx.strokeStyle = color; ctx.strokeRect(x, y, w, h);
-    ctx.setLineDash([]);
-    let label = `${o.name} ${showDist(d)}ม.`;
-    if (o.fast >= 2) label += ' ⚠'; else if (o.crossing) label += ' ↔'; else if (o.inPath) label += ' ⛔';
+    let label = `${o.name} ${showDist(o.d)}ม.`;
+    if (o.fast >= 2) label += ' ⚠พุ่งเข้า';
+    else if (o.crossing) label += ' ↔ตัดผ่าน';
+    else if (o.inPath) label += ' ⛔ขวางทาง';
     const tw = ctx.measureText(label).width + 12, lh = fs + 10;
     ctx.fillStyle = color; ctx.fillRect(x, Math.max(0, y - lh), tw, lh);
     ctx.fillStyle = '#000'; ctx.fillText(label, x + 6, Math.max(lh - 8, y - 8));
   }
 }
 
-// ---------- Tap anywhere on the camera area: short summary ----------
+// ---------- Tap the camera area: spoken summary ----------
 $('view').addEventListener('click', () => {
   if (!running) return;
-  const names = ['ซ้าย', 'หน้า', 'ขวา'];
-  const parts = sectors.map((s, i) => `${names[i]} ${s ? `${s.name} ${speakDist(s.d)}` : 'โล่ง'}`);
-  say(parts.join(', '), 4);
-});
-
-// ---------- Near-person toggle (big button) ----------
-function syncNearBtn() {
-  const b = $('nearBtn');
-  b.innerHTML = `เตือนคนใกล้<br>${cfg.nearPerson ? 'เปิด' : 'ปิด'}`;
-  b.classList.toggle('off', !cfg.nearPerson);
-  b.setAttribute('aria-label', `เตือนคนระยะใกล้ ตอนนี้${cfg.nearPerson ? 'เปิด' : 'ปิด'} แตะเพื่อ${cfg.nearPerson ? 'ปิด' : 'เปิด'}`);
-}
-$('nearBtn').addEventListener('click', () => {
-  cfg.nearPerson = !cfg.nearPerson; saveCfg(); syncNearBtn();
-  say(`เตือนคนใกล้ ${cfg.nearPerson ? 'เปิด' : 'ปิด'}`, 1);
+  const parts = sectors.map((s, i) =>
+    `${SECTOR_NAMES[i]} ${s ? `${s.name} ${speakDist(s.d)}${s.inPath ? ' ขวางทาง' : ''}` : 'โล่ง'}`);
+  say(parts.join(', '), 3);
 });
 
 // ---------- Start / stop ----------
 async function start() {
-  const btn = $('startBtn'), note = $('startNote');
+  const btn = $('toggle');
   btn.disabled = true;
   sonar.init();
-  startOrientation();
-  say('กำลังเปิด', 4);
-  note.textContent = 'กำลังเปิดกล้อง…';
+  say('กำลังเปิดกล้อง', 4);
+  msg.textContent = 'กำลังเปิดกล้อง…';
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: P().cam[0] }, height: { ideal: P().cam[1] },
-               frameRate: { ideal: P().fpsCam, max: 30 } }, audio: false });
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 },
+               frameRate: { ideal: 30 } }, audio: false });
     video.srcObject = stream;
     await video.play();
     const key = cfg.model + '|' + cfg.webgpu;
-    if (!model || (modelKey !== key && !autoLite)) {
-      note.textContent = 'กำลังโหลด AI… (ครั้งแรกอาจใช้เวลาสักครู่)';
-      model = await loadModel(cfg.model);
+    if (!model || modelKey !== key) {
+      msg.textContent = 'กำลังโหลด AI… (ครั้งแรกอาจใช้เวลาสักครู่)';
+      model = await loadModel();
       modelKey = key;
     }
-    if (cfg.poles) loadSeg();            // background, don't wait
     try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (_) {}
-    tracker = new Tracker(); sectors = [null, null, null]; frame = 0; runStart = performance.now(); shed = 0; slowFrames = 0;
+    tracker = new Tracker(); sectors = [null, null, null]; frame = 0;
     running = true;
     document.body.classList.add('running');
-    document.body.classList.toggle('nocam', !cfg.showCam);
-    syncNearBtn();
-    note.textContent = '';
+    btn.textContent = 'แตะเพื่อหยุด';
+    btn.setAttribute('aria-label', 'โซนาร์กำลังทำงาน แตะเพื่อหยุด');
+    msg.textContent = '';
     sonar.start();
-    say('พร้อม', 4);
-    $('stopBtn').focus();
+    say('โซนาร์พร้อม แตะกลางจอเพื่อฟังสรุป', 4);
     loop();
   } catch (e) {
     console.error(e);
     const why = cameraError(e);
-    note.innerHTML = why;
+    msg.innerHTML = why;
     say(why.split('<br>')[0], 4);
     stream?.getTracks().forEach(t => t.stop()); stream = null;
   }
@@ -917,15 +576,18 @@ function cameraError(e) {
   if (/FBAN|FBAV|Instagram|Line\/|Messenger|TikTok/i.test(ua))
     return 'เปิดกล้องไม่ได้ในแอปนี้<br>กด ⋮ แล้วเลือก "เปิดใน Chrome" หรือ "เปิดใน Safari"';
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia)
-    return 'ต้องเปิดผ่านลิงก์ https เท่านั้น<br>ใช้ลิงก์ https://sippakornq.github.io/third-eye/';
+    return 'ต้องเปิดผ่านลิงก์ https เท่านั้น<br>ใช้ลิงก์ https://….github.io/third-eye/';
   if (typeof cocoSsd === 'undefined' || /model|fetch|network|load/i.test(e?.message || ''))
     return 'โหลด AI ไม่สำเร็จ<br>ตรวจอินเทอร์เน็ต แล้วรีเฟรชหน้า';
   switch (e?.name) {
     case 'NotAllowedError': case 'SecurityError':
-      return 'ไม่ได้รับอนุญาตให้ใช้กล้อง<br>Android: แตะไอคอนข้างลิงก์ → สิทธิ์ → กล้อง → อนุญาต<br>iPhone: แตะ "aA" → การตั้งค่าเว็บไซต์ → กล้อง → อนุญาต';
-    case 'NotFoundError': case 'OverconstrainedError': return 'ไม่พบกล้องในเครื่องนี้';
-    case 'NotReadableError': case 'AbortError': return 'กล้องถูกแอปอื่นใช้อยู่<br>ปิดแอปที่ใช้กล้อง แล้วลองใหม่';
-    default: return 'เริ่มไม่สำเร็จ: ' + (e?.name || '') + ' ' + (e?.message || e);
+      return 'ไม่ได้รับอนุญาตให้ใช้กล้อง<br>Android: แตะไอคอนข้างลิงก์ด้านบน → สิทธิ์ → กล้อง → อนุญาต แล้วรีเฟรช<br>iPhone: แตะ "aA" ข้างลิงก์ → การตั้งค่าเว็บไซต์ → กล้อง → อนุญาต';
+    case 'NotFoundError': case 'OverconstrainedError':
+      return 'ไม่พบกล้องในเครื่องนี้';
+    case 'NotReadableError': case 'AbortError':
+      return 'กล้องถูกแอปอื่นใช้อยู่<br>ปิดแอปกล้อง แอปวิดีโอคอล หรือแท็บอื่นที่ใช้กล้อง แล้วลองใหม่';
+    default:
+      return 'เริ่มไม่สำเร็จ: ' + (e?.name || '') + ' ' + (e?.message || e);
   }
 }
 
@@ -935,15 +597,18 @@ function stop() {
   stream?.getTracks().forEach(t => t.stop()); stream = null;
   wakeLock?.release?.(); wakeLock = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  sectors = [null, null, null];
+  sectors = [null, null, null]; updateRadar();
   speechSynthesis.cancel(); speakingPri = 9;
-  say('หยุด', 4);
+  say('หยุดโซนาร์', 4);
   document.body.classList.remove('running');
-  $('startBtn').focus();
+  const btn = $('toggle');
+  btn.textContent = 'แตะเพื่อเริ่ม';
+  btn.setAttribute('aria-label', 'แตะเพื่อเริ่มโซนาร์');
+  msg.textContent = 'หยุดแล้ว';
+  fpsEl.textContent = '';
 }
 
-$('startBtn').addEventListener('click', start);
-$('stopBtn').addEventListener('click', stop);
+$('toggle').addEventListener('click', () => running ? stop() : start());
 document.addEventListener('visibilitychange', async () => {
   if (running && document.visibilityState === 'visible') {
     try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (_) {}
@@ -951,50 +616,37 @@ document.addEventListener('visibilitychange', async () => {
   }
 });
 
-// ---------- Settings ----------
+// ---------- Settings dialog ----------
 const dlg = $('settings');
-const SLIDERS = { vol: ['volume', v => Math.round(v * 100)], veh: ['vehicleWarn'], obs: ['obstacleWarn'],
-                  nearZ: ['nearZone'], son: ['sonarRange'], side: ['sideWarn'], cam: ['camHeight', v => (+v).toFixed(2)], spd: ['approachSpeed', v => (+v).toFixed(1)] };
-const SWITCHES = { optNear: 'nearPerson', optPoles: 'poles', optUnknown: 'unknown', optCam: 'showCam', optHb: 'heartbeat',
-                   optVib: 'vibrate', optZoom: 'zoom', optGpu: 'webgpu' };
 function syncSettingsUI() {
-  for (const [id, [key, fmt]] of Object.entries(SLIDERS)) {
-    $(id).value = cfg[key];
-    $(id.replace('nearZ', 'near') + 'V').textContent = fmt ? fmt(cfg[key]) : cfg[key];
-  }
-  for (const [id, key] of Object.entries(SWITCHES)) $(id).checked = cfg[key];
-  $('model').value = cfg.model; $('perf').value = cfg.perf;
+  $('range').value = cfg.range; $('rangeV').textContent = cfg.range;
+  $('prep').value = cfg.prepDist; $('prepV').textContent = cfg.prepDist;
+  $('vol').value = cfg.volume; $('volV').textContent = Math.round(cfg.volume * 100);
+  $('spd').value = cfg.approachSpeed; $('spdV').textContent = (+cfg.approachSpeed).toFixed(1);
+  $('model').value = cfg.model; $('zoom').checked = cfg.zoom; $('gpu').checked = cfg.webgpu;
+  $('hb').checked = cfg.heartbeat; $('vib').checked = cfg.vibrate;
   $('calibMsg').textContent = `ค่าปรับเทียบปัจจุบัน: ×${cfg.focalScale.toFixed(2)}`;
 }
-for (const [id, [key]] of Object.entries(SLIDERS))
-  $(id).oninput = e => { cfg[key] = +e.target.value; saveCfg(); syncSettingsUI(); if (key === 'volume') sonar.duck(false); };
-for (const [id, key] of Object.entries(SWITCHES))
-  $(id).onchange = e => {
-    cfg[key] = e.target.checked; saveCfg();
-    if (key === 'showCam') { document.body.classList.toggle('nocam', !cfg.showCam); ctx.clearRect(0, 0, canvas.width, canvas.height); }
-    if (key === 'poles' && cfg.poles && running && !segModel) showSay('มีผลเมื่อกดเริ่มใหม่', false);
-    if (key === 'nearPerson') syncNearBtn();
-  };
-$('model').onchange = e => { cfg.model = e.target.value; autoLite = false; saveCfg(); };
-$('perf').onchange = e => {
-  cfg.perf = e.target.value; saveCfg();
-  if (running) showSay('ความละเอียดกล้องจะเปลี่ยนเมื่อกดเริ่มใหม่', false);
-};
-for (const g of ['gear', 'gear2']) $(g).addEventListener('click', () => { syncSettingsUI(); dlg.showModal(); });
+$('gear').addEventListener('click', () => { syncSettingsUI(); dlg.showModal(); });
 $('close').addEventListener('click', () => dlg.close());
-$('reset').addEventListener('click', () => {
-  const fs = cfg.focalScale; cfg = { ...DEFAULT_CFG, focalScale: fs }; saveCfg(); syncSettingsUI(); syncNearBtn();
-});
+$('range').oninput = e => { cfg.range = +e.target.value; saveCfg(); syncSettingsUI(); };
+$('prep').oninput = e => { cfg.prepDist = +e.target.value; saveCfg(); syncSettingsUI(); };
+$('vol').oninput = e => { cfg.volume = +e.target.value; saveCfg(); syncSettingsUI(); sonar.duck(false); };
+$('spd').oninput = e => { cfg.approachSpeed = +e.target.value; saveCfg(); syncSettingsUI(); };
+$('model').onchange = e => { cfg.model = e.target.value; saveCfg(); };
+$('zoom').onchange = e => { cfg.zoom = e.target.checked; saveCfg(); };
+$('gpu').onchange = e => { cfg.webgpu = e.target.checked; saveCfg(); };
+$('hb').onchange = e => { cfg.heartbeat = e.target.checked; saveCfg(); };
+$('vib').onchange = e => { cfg.vibrate = e.target.checked; saveCfg(); };
 $('calib').addEventListener('click', () => {
   const people = lastDets.filter(o => o.cls === 'person');
-  if (!running || !people.length) { $('calibMsg').textContent = 'ไม่พบคนในภาพ — เริ่มใช้งานและให้คนยืนตรงกลางภาพก่อน'; return; }
+  if (!running || !people.length) { $('calibMsg').textContent = 'ไม่พบคนในภาพ — เริ่มโซนาร์และให้คนยืนตรงกลางภาพก่อน'; return; }
   const p = people.sort((a, b) => b.bbox[3] - a.bbox[3])[0];
   const raw = estimateDistance('person', p.bbox, video.videoWidth, video.videoHeight, cfg);
   cfg.focalScale = Math.min(3, Math.max(0.3, cfg.focalScale * 2.0 / raw));
   saveCfg(); syncSettingsUI();
   $('calibMsg').textContent += ' ✓ ปรับเทียบแล้ว';
 });
-syncNearBtn();
 </script>
 </body>
 </html>
