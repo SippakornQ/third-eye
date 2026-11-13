@@ -1,53 +1,66 @@
 # ตาที่สาม (Third Eye) — A Phone Sonar for Blind and Low-Vision Walkers
 
-A web app that turns a phone camera into a **3-direction sonar**. Hang the phone around your neck or hold it at chest height, and it beeps for obstacles on the **left, center and right, up to about 5 m away**. The closer an obstacle is, the faster it beeps. People and objects make different sounds, and if something is **coming at you fast**, such as a motorcycle on the sidewalk, it gives a **spoken warning in Thai**.
+A web app that turns a phone camera into a **3-direction sonar with spoken warnings in Thai**. Hang the phone around your neck with the back camera facing forward. It beeps faster as obstacles get closer, and **people, vehicles and objects (including electric poles)** each have their own sound. It speaks **short, clear warnings**: a vehicle coming at you from **12 m**, an obstacle in your path from **6 m**, and a person right in front of you within **2 m** (this last one can be switched on or off).
 
-**Live demo:** https://sippakornq.github.io/third-eye/` (open on a phone)
+**Live demo:** https://sippakornq.github.io/third-eye/ (open on a phone)
 
 ## The problem
-Thai sidewalks are crowded with parked and moving motorcycles, vendor stalls, tables, chairs and people. A white cane only detects what it touches, about one step ahead and at ground level. It cannot tell a blind walker that a motorcycle is speeding toward them, or that a person is about to walk into them. Without help, blind and low-vision people have to walk slowly, bump into things, or depend on someone to guide them.
+Thai sidewalks are crowded with electric poles, parked and moving motorcycles, vendor stalls, chairs and people. A white cane only detects what it touches, about one step ahead and at ground level. It cannot tell a blind walker that a motorcycle is coming at them, that a car is about to cut across, or what is blocking the way a few meters ahead. Without help, blind and low-vision people have to walk slowly, bump into things, or depend on someone to guide them.
 
 ## Who it is for
 Blind and low-vision people walking on sidewalks, around campus, or around their dorm. It is a helper to use **together with a white cane**, not a replacement for one.
 
+## Zones and warnings
+
+| Zone | What happens | Example (spoken) |
+|---|---|---|
+| **Vehicles, up to 12 m** | A vehicle rushing toward you or cutting across your path | "ระวังรถ ซ้าย" ("watch out, car, left") · "รถตัดหน้า จากขวา" ("car cutting across from the right") |
+| **Normal zone, 4–6 m and beyond** | An obstacle standing in your walking path | "เสา ข้างหน้า 6 เมตร" ("pole ahead, 6 m") |
+| **Near zone, 0–2 m** | Something is right in front of you. For people, this can be switched on/off | "คน ข้างหน้า" ("person ahead") · "คน ใกล้มาก" ("person very close") |
+
+Warnings are 2–4 words long. Only the most important one is spoken at a time, and each one has a cooldown so the app doesn't keep talking.
+
+**Sonar sounds:** a high "tid" means a person, a falling "piew" means a vehicle, and a low "tud" means an object or pole. The beeps get faster as the obstacle gets closer. Left, center and right come through as stereo, with a slight pitch difference so a single speaker still works. A soft slow "pok" means the path is clear.
+
+## How to use
+1. Open the link on your phone and tap the big yellow **เริ่ม** (Start) button. Allow camera access.
+2. Hang the phone around your neck with the back camera facing forward.
+3. While it runs, the screen has only two big buttons: **หยุด** (Stop) and **เตือนคนใกล้ เปิด/ปิด** (near-person warning on/off). Tap anywhere else on the screen to hear a short summary of all 3 directions.
+4. ⚙ **Settings:** the main options are simple switches. The advanced section, for a sighted helper, has the distances, the model choice and distance calibration.
+
 ## How it works
+1. **Two AI models running in the browser** (TensorFlow.js, WebGPU when available, otherwise WebGL). No video leaves the phone.
+   - **COCO-SSD** detects people, vehicles, animals and furniture quickly, every frame.
+   - **DeepLab v3 (Cityscapes)**, a street-scene segmentation model, finds **electric poles**, which COCO-SSD cannot detect. It runs about once per second.
+2. **Far range:** every other frame, the app runs a second pass on the zoomed-in center of the image, so vehicles 10–12 m away are big enough for the model to detect.
+3. **Distance** is estimated from each object's known real size: a person is about 1.65 m tall, a car about 1.75 m wide, a pole about 0.3 m wide. It can be calibrated with a person standing 2 m away. Between pole-model updates, the pole's distance keeps counting down at your walking speed.
+4. **Telling things apart better:**
+   - Each tracked object keeps the label it has been given most often recently, so a brief misdetection (a person seen as a chair for one frame) doesn't change what is announced.
+   - A person sitting on a motorcycle is counted as part of the motorcycle.
+   - Objects need higher confidence than people and vehicles before they count.
+   - An object must be seen several times before anything is spoken.
+5. **In the path or not:** each object's sideways position is converted to meters and compared with a 1.2 m-wide walking corridor. Closing speed and sideways speed (least-squares over the last 1.2 s) are used to predict "rushing in" and "cutting across".
 
-| What you hear | Meaning |
-|---|---|
-| Soft, slow "pok … pok …" | Path clear: the system is running and nothing is within range |
-| High clear "tid-tid-tid" | A **person** |
-| Low buzzy "tud-tud-tud" | An **object**, such as a motorcycle, car, chair or table |
-| Beeps get faster → nearly continuous | The obstacle is getting closer (about 0.9 s apart at 5 m, nearly continuous under 1 m) |
-| Sound in the left ear / center / right ear | The obstacle's direction. Left is also slightly lower in pitch and right slightly higher, so a single speaker still works |
-| Voice: "ระวัง มอเตอร์ไซค์ พุ่งเข้ามา ด้านซ้าย 4 เมตร" | Something is approaching fast ("motorcycle rushing in, on the left, 4 meters") |
-| Tap the middle of the screen | Hear a spoken summary of all 3 directions |
-
-Under the hood:
-1. **Detection:** COCO-SSD (TensorFlow.js) runs fully in the browser, so no video leaves the phone. It recognizes people, vehicles, animals and street furniture.
-2. **Distance:** a pinhole-camera estimate from each object's known real-world size (for example, a person is about 1.65 m tall). When a box is cut off by the edge of the frame, the app uses the closer of the height-based and width-based estimates, so mistakes err on the safe side. It can be calibrated by having a person stand 2 m away.
-3. **Direction:** the frame is split into 3 sectors. Wide objects count in every sector they cover.
-4. **Speed:** objects are tracked between frames. Closing speed is a least-squares slope of distance over the last second. A voice warning fires when a moving object (person, vehicle or animal) closes faster than 2.2 m/s and would reach you within 3 s. A walking person approaching at about 1.3 m/s, or a parked car, does **not** trigger it.
-5. **Sound:** Web Audio API, with a separate beep rhythm and stereo pan for each sector.
+**Simulation results** (40 noisy runs each):
+- A car approaching at 8 m/s is warned at about 11–12 m, and a motorcycle at 6 m/s at about 12 m.
+- A car crossing the path is warned at about 9 m.
+- A pole in the path is announced at 6 m and again under 2 m.
+- A person standing 0.5 m ahead is announced every 4 s, or never when switched off.
+- A parked car beside the path is never announced.
 
 ## How to run
-**Phone:** open the GitHub Pages link, tap the big yellow button, and allow camera access. Earphones are recommended (open-ear or one earbud, so you can still hear traffic).
+- **Phone:** open the live demo link.
+- **Computer:** run `python -m http.server 8000`, then open http://localhost:8000. The camera only works over HTTPS or on localhost.
+- **Deploy:** go to the repo's Settings → Pages → Source: `main` branch, `/ (root)`.
 
-**Computer (testing):**
-```bash
-python -m http.server 8000     # then open http://localhost:8000
-```
-The camera only works over HTTPS or on `localhost`.
-
-**Deploy:** go to the repo's Settings → Pages → Source: `main` branch, `/ (root)`.
-
-**Settings (⚙, for a sighted helper):** range, volume, the speed that triggers a voice warning, model choice (fast or accurate), path-clear sound, vibration, and distance calibration.
+The small text in the top right corner shows the frame rate (fps), the GPU mode, the model (accurate or fast), and whether pole detection is working (เสา ✓ / ✗). If the accurate model is too slow on your phone, the app switches to the fast model automatically.
 
 ## Limitations
-- It only detects about 20 known object types. It **cannot see** walls, poles, holes, steps or curbs.
-- Distance is an estimate from typical object sizes, so expect roughly ±30%.
-- It cannot tell your own walking from an object moving. That is why voice warnings use a speed threshold above normal walking pace and only apply to things that can move.
+- Pole detection depends on the street-scene model. Thin, far-away, or unusual poles can be missed. Pole detection updates about once per second, not every frame.
+- It does not detect holes, steps or curbs.
+- Distance is an estimate, about ±30%, and less accurate beyond 8 m.
 - On iPhone, turn off silent mode if there is no sound. iPhone does not support vibration.
 - **Always use it with a white cane.**
 
 ## Tech
-HTML/CSS/JS · TensorFlow.js · COCO-SSD · Web Audio API · Web Speech API (th-TH) · Vibration API · Screen Wake Lock API
+HTML/CSS/JS · TensorFlow.js (WebGPU/WebGL) · COCO-SSD · DeepLab v3 Cityscapes · Web Audio API · Web Speech API (th-TH) · Vibration API · Screen Wake Lock API
