@@ -140,8 +140,8 @@
     <input type="range" id="spd" min="1" max="5" step="0.1">
     <label>โมเดล AI</label>
     <select id="model">
-      <option value="mobilenet_v2">แม่น (แนะนำ · ถ้าช้าจะสลับเป็นแบบเร็วเอง)</option>
-      <option value="lite_mobilenet_v2">เร็ว</option>
+      <option value="lite_mobilenet_v2">เร็ว · ลื่น (แนะนำ)</option>
+      <option value="mobilenet_v2">แม่นกว่า · อาจกระตุก (ถ้าช้าจะสลับเป็นแบบเร็วเอง)</option>
     </select>
     <div class="sw"><span>ซูมกลางภาพ (จับของไกล)</span><input type="checkbox" id="optZoom"></div>
     <div class="sw"><span>WebGPU</span><input type="checkbox" id="optGpu"></div>
@@ -159,7 +159,7 @@
 <!-- ===================== CORE LOGIC (no DOM, unit-testable) ===================== -->
 <script id="core">
 const DEFAULT_CFG = {
-  v: 4,
+  v: 5,
   sonarRange: 8,          // m — beeps for anything within this distance
   obstacleWarn: 6,        // m — say what is standing in the walking path
   vehicleWarn: 12,        // m — say when a vehicle rushes in / cuts across
@@ -170,7 +170,7 @@ const DEFAULT_CFG = {
   volume: 0.8,
   approachSpeed: 2.2,     // m/s
   ttc: 4.0,               // s
-  model: 'mobilenet_v2',
+  model: 'lite_mobilenet_v2',   // fast by default: smooth on most phones
   zoom: true,
   webgpu: true,
   heartbeat: true,
@@ -655,7 +655,15 @@ async function startOrientation() {
 
 async function detectSeg(W, H) {
   const t0 = performance.now();
-  const out = segModel.predict(video);
+  let out;
+  try {
+    out = tf.tidy(() => {
+      const img = tf.browser.fromPixels(video);
+      const [vh, vw] = img.shape, r = 321 / Math.max(vh, vw);
+      const small = tf.image.resizeBilinear(img, [Math.round(vh * r), Math.round(vw * r)]);
+      return tf.squeeze(segModel.model.execute(tf.expandDims(small)));
+    });
+  } catch (e) { out = segModel.predict(video); }          // fallback: library's own (larger) input
   const [h, w] = out.shape;
   const labels = await out.data();
   out.dispose();
@@ -686,6 +694,7 @@ async function detectZoom(W, H) {
 let fpsN = 0, fpsT = performance.now(), fps = 0;
 async function loop() {
   if (!running) return;
+  const loopStart = performance.now();
   try {
     if (video.readyState >= 2) {
       const W = video.videoWidth, H = video.videoHeight;
@@ -693,14 +702,14 @@ async function loop() {
 
       const t0 = performance.now();
       let preds = await model.detect(video, 20, 0.4);
-      if (cfg.zoom && frame % 2 === 0) preds = mergeDets(preds, await detectZoom(W, H));
+      if (cfg.zoom && frame % 3 === 0) preds = mergeDets(preds, await detectZoom(W, H));
       cocoMs = cocoMs ? 0.8 * cocoMs + 0.2 * (performance.now() - t0) : performance.now() - t0;
       frame++;
       preds = suppressRiders(preds.filter(p => OBJ[p.class] && p.score >= minScoreFor(p.class)));
       let dets = preds.map(p => makeDet(p.class, p.bbox, W, H, cfg, p.score));
 
       // pole model: slower, so it runs about once a second
-      const segEvery = Math.max(900, segMs * 2);
+      const segEvery = Math.max(1200, segMs * 3);
       if (cfg.poles && segModel && performance.now() - lastSeg > segEvery) {
         lastSeg = performance.now();
         try { dets = dets.concat(await detectSeg(W, H)); }
@@ -722,13 +731,14 @@ async function loop() {
       await maybeGoLite();
     }
   } catch (e) { console.error(e); }
-  setTimeout(loop, 0);
+  const spent = performance.now() - loopStart;
+  setTimeout(loop, Math.max(10, 66 - spent));
 }
 
 // Too slow with the accurate model? switch to the fast one automatically.
 async function maybeGoLite() {
   if (autoLite || cfg.model !== 'mobilenet_v2' || performance.now() - runStart < 6000) return;
-  if (cocoMs < 260) return;
+  if (cocoMs < 150) return;
   autoLite = true;
   showSay('สลับเป็นโหมดเร็ว', false);
   model = await loadModel('lite_mobilenet_v2');
@@ -824,7 +834,7 @@ async function start() {
   note.textContent = 'กำลังเปิดกล้อง…';
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 },
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 },
                frameRate: { ideal: 30 } }, audio: false });
     video.srcObject = stream;
     await video.play();
