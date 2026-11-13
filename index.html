@@ -184,24 +184,23 @@ const DEFAULT_CFG = {
 };
 
 // class -> [Thai short name (spoken), typical real height m, typical real width m]
+// Only people, vehicles and things commonly standing on Thai sidewalks.
 const OBJ = {
   person: ['คน', 1.65, 0.5],
   bicycle: ['จักรยาน', 1.0, 0.6], car: ['รถ', 1.5, 1.75], motorcycle: ['มอไซค์', 1.15, 0.75],
   bus: ['รถเมล์', 3.0, 2.5], truck: ['รถบรรทุก', 2.8, 2.3],
-  dog: ['หมา', 0.55, 0.3], cat: ['แมว', 0.3, 0.15],
   chair: ['เก้าอี้', 0.9, 0.5], bench: ['ม้านั่ง', 0.8, 0.5], 'dining table': ['โต๊ะ', 0.75, 0.8],
-  couch: ['โซฟา', 0.85, 0.9], 'potted plant': ['กระถาง', 0.6, 0.45],
+  'potted plant': ['กระถางต้นไม้', 0.6, 0.45], umbrella: ['ร่ม', 1.0, 1.0],
   'fire hydrant': ['หัวดับเพลิง', 0.8, 0.35], 'parking meter': ['เสา', 1.3, 0.3],
-  'stop sign': ['ป้าย', 0.75, 0.75], suitcase: ['กระเป๋า', 0.65, 0.4],
-  umbrella: ['ร่ม', 1.0, 1.0], refrigerator: ['ตู้', 1.7, 0.7],
-  pole: ['เสา', 8, 0.3],         // from the street-scene model; height is unknown so width is used
-  // things found by the street-scene model on the walking path (distance from where they touch the ground)
-  thing: ['วัตถุ', 1, 1], tree: ['ต้นไม้', 3, 0.5], sign: ['ป้าย', 1, 0.6]
+  'stop sign': ['ป้าย', 0.75, 0.75], refrigerator: ['ตู้', 1.7, 0.7],
+  // from the street-scene model
+  pole: ['เสาไฟ', 8, 0.3],       // height unknown, so width is used
+  thing: ['วัตถุ', 1, 1], tree: ['ต้นไม้', 3, 0.5], sign: ['ป้าย', 1, 0.6], barrier: ['ที่กั้น', 1, 1]
 };
 const VEHICLE = new Set(['bicycle','car','motorcycle','bus','truck']);
-const MOVING = new Set(['person','dog','cat', ...VEHICLE]);
+const MOVING = new Set(['person', ...VEHICLE]);
 // Objects are often false positives; demand more confidence from them.
-function minScoreFor(cls) { return cls === 'person' ? 0.5 : VEHICLE.has(cls) ? 0.45 : 0.55; }
+function minScoreFor(cls) { return cls === 'person' ? 0.5 : 0.45; }
 function kindOf(cls) { return cls === 'person' ? 'person' : VEHICLE.has(cls) ? 'vehicle' : 'object'; }
 
 function focalPx(W, H, cfg) {
@@ -285,7 +284,7 @@ function polesFromSeg(labels, w, h, poleId = 5) {
 
 // Anything standing on the walking path that is not floor, sky, a person/vehicle (the other model names those)
 // or a pole. Distance comes from where it touches the ground: d = cameraHeight · f / (pixels below horizon).
-// ids = { walk:Set, sky, skip:Set, tree:Set, sign:Set }
+// ids = { walk:Set, sky, skip:Set, tree:Set, sign:Set, fence:Set }
 function groundObstacles(labels, w, h, cfg, pitchDownDeg, ids) {
   const f = focalPx(w, h, cfg);
   const yh = h / 2 - f * Math.tan(pitchDownDeg * Math.PI / 180);   // horizon row
@@ -315,7 +314,8 @@ function groundObstacles(labels, w, h, cfg, pitchDownDeg, ids) {
           top = yy;
         }
         const major = +Object.keys(cnt).reduce((a, b) => cnt[a] >= cnt[b] ? a : b);
-        const cls = ids.tree.has(major) ? 'tree' : ids.sign.has(major) ? 'sign' : 'thing';
+        const cls = ids.tree.has(major) ? 'tree' : ids.sign.has(major) ? 'sign' :
+                    ids.fence && ids.fence.has(major) ? 'barrier' : 'thing';
         const d = cfg.camHeight * f / (start - yh);
         return [{ cls, d, bbox: [x0s, top, x1s - x0s + 1, start - top + 1] }];
       }
@@ -432,12 +432,13 @@ function decideAlerts(tracker, t, cfg) {
     else if (Math.abs(tr.X) < cfg.corridor / 2 + tr.halfW + cfg.sideWarn && d <= cfg.nearZone && t - tr.approachAt > 4) {
       if (tr.kind === 'person') {
         if (cfg.nearPerson && t - tr.nearAt > 4 && t - (memo.nearPerson || -1e9) > 4) out.push({ type: 'near', pri: 2, tr });
-      } else if (!tr.nearDone) out.push({ type: 'near', pri: 2, tr });
+      } else if (t - tr.nearAt > 6) out.push({ type: 'near', pri: 2, tr });
     }
     else if (tr.inPath && tr.kind !== 'person' && d <= cfg.obstacleWarn + 0.3 && !tr.aheadDone && t - tr.approachAt > 4)
       out.push({ type: 'ahead', pri: 3, tr });
   }
-  return out.sort((a, b) => a.pri - b.pri || (a.tr.dNow ?? a.tr.d) - (b.tr.dNow ?? b.tr.d));
+  return out.sort((a, b) => a.pri - b.pri || (a.tr.nearAt > -1e8) - (b.tr.nearAt > -1e8) ||
+                           (a.tr.dNow ?? a.tr.d) - (b.tr.dNow ?? b.tr.d));
 }
 // Call after an alert was actually spoken, so nothing is silently lost.
 function markAlert(a, t, tracker) {
@@ -451,13 +452,13 @@ function markAlert(a, t, tracker) {
   else tr.aheadDone = true;
 }
 
-function side(X) { return X < -0.6 ? 'ซ้าย' : X > 0.6 ? 'ขวา' : 'ข้างหน้า'; }
+function side(X) { return X < -0.6 ? 'ทางซ้าย' : X > 0.6 ? 'ทางขวา' : 'ข้างหน้า'; }
 // Short and clear: name · direction · distance.
 function alertText(a) {
   const tr = a.tr, n = tr.name, d = tr.dNow ?? tr.d;
-  if (a.type === 'approach') return `ระวัง${n} ${side(tr.X)} ${speakDist(d)}`;
+  if (a.type === 'approach') return `ระวัง${n}${side(tr.X)} ${speakDist(d)}`;
   if (a.type === 'cross') return `${n}ตัดหน้า ${tr.X < 0 ? 'จากซ้าย' : 'จากขวา'} ${speakDist(d)}`;
-  return `${n} ${side(tr.X)} ${speakDist(d)}`;
+  return `${n}${side(tr.X)} ${speakDist(d)}`;
 }
 
 function sectorState(tracks, range) {
@@ -632,7 +633,8 @@ function segIds() {
     pole: id('pole'), sky: id('sky'),
     walk: new Set(['road', 'sidewalk', 'terrain'].map(id)),
     skip: new Set(['person','rider','car','truck','bus','train','motorcycle','bicycle','pole'].map(id)),
-    tree: new Set([id('vegetation')]), sign: new Set([id('traffic sign'), id('traffic light')])
+    tree: new Set([id('vegetation')]), sign: new Set([id('traffic sign'), id('traffic light')]),
+    fence: new Set([id('fence')])
   };
 }
 // Phone tilt: how far the camera looks down (degrees). Phone upright in portrait = beta 90.

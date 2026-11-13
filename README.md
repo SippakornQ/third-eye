@@ -1,6 +1,6 @@
 # ตาที่สาม (Third Eye) — A Phone Sonar for Blind and Low-Vision Walkers
 
-A web app that turns a phone camera into a **3-direction sonar with spoken warnings in Thai**. Hang the phone around your neck with the back camera facing forward. It beeps faster as obstacles get closer, and **people, vehicles and objects (including electric poles)** each have their own sound. It speaks **short, clear warnings with what it is, which direction, and how far**: a vehicle coming at you from **12 m**, an obstacle in your path from **6 m**, and people or things within **2 m** in front of you or to your side (the warning for people can be switched on or off). Things it cannot name are called **"วัตถุ"** ("object").
+A web app that turns a phone camera into a **3-direction sonar with spoken warnings in Thai**. Hang the phone around your neck with the back camera facing forward. It beeps faster as obstacles get closer, and **people, vehicles and sidewalk obstacles (electric poles, trees, barriers, cabinets, stalls, chairs and tables)** each have their own sound. It speaks **short, clear warnings with what it is, which direction, and how far**: a vehicle coming at you from **12 m**, an obstacle in your path from **6 m**, and people or things within **2 m** in front of you or to your side (the warning for people can be switched on or off). Things it cannot name are called **"วัตถุ"** ("object").
 
 **Live demo:** https://sippakornq.github.io/third-eye/ (open on a phone)
 
@@ -14,9 +14,9 @@ Blind and low-vision people walking on sidewalks, around campus, or around their
 
 | Zone | What happens | Example (spoken) |
 |---|---|---|
-| **Vehicles, up to 12 m** | A vehicle rushing toward you or cutting across your path | "ระวังรถ ซ้าย 10 เมตร" ("watch out, car, left, 10 m") · "รถตัดหน้า จากขวา 9 เมตร" ("car cutting across from the right, 9 m") |
-| **Normal zone, 4–6 m and beyond** | An obstacle standing in your walking path | "เสา ข้างหน้า 6 เมตร" ("pole ahead, 6 m") · "วัตถุ ข้างหน้า 5 เมตร" ("object ahead, 5 m") |
-| **Near zone, 0–2 m** | A person or thing in front of you or up to about 1 m to the side. The warning for people can be switched on/off | "คน ข้างหน้า ครึ่งเมตร" ("person ahead, half a meter") · "คน ซ้าย 1 เมตร" ("person left, 1 m") · "เก้าอี้ ขวา 2 เมตร" ("chair right, 2 m") |
+| **Vehicles, up to 12 m** | A vehicle rushing toward you or cutting across your path | "ระวังรถทางซ้าย 10 เมตร" ("watch out, car on the left, 10 m") · "รถตัดหน้า จากขวา 9 เมตร" ("car cutting across from the right, 9 m") |
+| **Normal zone, 4–6 m and beyond** | An obstacle standing in your walking path | "เสาไฟข้างหน้า 6 เมตร" ("pole ahead, 6 m") · "วัตถุข้างหน้า 5 เมตร" ("object ahead, 5 m") |
+| **Near zone, 0–2 m** | A person or thing in front of you or up to about 1 m to the side. The warning for people can be switched on/off | "คนข้างหน้า ครึ่งเมตร" ("person ahead, half a meter") · "คนทางซ้าย 1 เมตร" ("person on the left, 1 m") · "เก้าอี้ทางขวา 2 เมตร" ("chair on the right, 2 m") |
 
 Every warning follows the pattern **what · direction · distance**. Only the most important one is spoken at a time, and each one has a cooldown so the app doesn't keep talking.
 
@@ -30,8 +30,8 @@ Every warning follows the pattern **what · direction · distance**. Only the mo
 
 ## How it works
 1. **Two AI models running in the browser** (TensorFlow.js, WebGPU when available, otherwise WebGL). No video leaves the phone.
-   - **COCO-SSD** detects people, vehicles, animals and furniture quickly, every frame.
-   - **DeepLab v3 (Cityscapes)**, a street-scene segmentation model, finds **electric poles**, which COCO-SSD cannot detect. It also finds **anything else standing in the walking path** that is not floor, sky, a person or a vehicle. These are named "ต้นไม้" (tree) or "ป้าย" (sign) when the model recognizes them, and "วัตถุ" (object) otherwise. It runs about once per second.
+   - **COCO-SSD** detects people, vehicles and common sidewalk things quickly, every frame: chairs, tables, benches, plant pots, vendor umbrellas, cabinets (ตู้), signs and hydrants. Other classes (animals, indoor items) are ignored on purpose to keep warnings focused.
+   - **DeepLab v3 (Cityscapes)**, a street-scene segmentation model, finds **electric poles**, which COCO-SSD cannot detect. It also finds **anything else standing in the walking path** that is not floor, sky, a person or a vehicle. These are named "ต้นไม้" (tree), "ที่กั้น" (barrier) or "ป้าย" (sign) when the model recognizes them, and "วัตถุ" (object) otherwise. It runs about once per second.
    - Distance to these unknown things doesn't need their size. It comes from **where they touch the ground**: distance = phone height × focal length ÷ pixels below the horizon. The phone's **tilt sensor** gives the horizon position. The phone height (default 1.3 m for a neck-hung phone) can be set in Settings.
 2. **Far range:** every other frame, the app runs a second pass on the zoomed-in center of the image, so vehicles 10–12 m away are big enough for the model to detect.
 3. **Distance** is estimated from each object's known real size: a person is about 1.65 m tall, a car about 1.75 m wide, a pole about 0.3 m wide. It can be calibrated with a person standing 2 m away. Between pole-model updates, the pole's distance keeps counting down at your walking speed.
