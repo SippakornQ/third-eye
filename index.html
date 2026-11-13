@@ -113,6 +113,13 @@
 
 <dialog id="settings">
   <h2>ตั้งค่า</h2>
+  <label>ประสิทธิภาพ</label>
+  <select id="perf">
+    <option value="light">เบา — ลื่น ไม่ค้าง (แนะนำ)</option>
+    <option value="normal">ปกติ — มือถือรุ่นกลาง</option>
+    <option value="full">เต็ม — มือถือรุ่นท็อป (จับรถไกลได้ดีสุด)</option>
+  </select>
+  <p class="small">ถ้าเครื่องร้อนหรือค้าง ให้เลือก "เบา" · โหมดเบาจะจับรถไกลเกิน 8 ม. ได้น้อยลง</p>
   <div class="sw"><span>เตือนคนระยะใกล้ (0–2 ม.)</span><input type="checkbox" id="optNear"></div>
   <div class="sw"><span>ตรวจจับเสาไฟและวัตถุบนทางเดิน</span><input type="checkbox" id="optPoles"></div>
   <div class="sw"><span>เตือนวัตถุที่ไม่รู้จัก ("วัตถุ")</span><input type="checkbox" id="optUnknown"></div>
@@ -159,7 +166,8 @@
 <!-- ===================== CORE LOGIC (no DOM, unit-testable) ===================== -->
 <script id="core">
 const DEFAULT_CFG = {
-  v: 6,
+  v: 7,
+  perf: 'light',          // light | normal | full
   sonarRange: 8,          // m — beeps for anything within this distance
   obstacleWarn: 6,        // m — say what is standing in the walking path
   vehicleWarn: 12,        // m — say when a vehicle rushes in / cuts across
@@ -373,7 +381,7 @@ class Tracker {
                             sectors: det.sectors, last: t, ttl: det.ttl });
       const sparse = det.ttl > 1;
       best.hist.push([t, best.d, best.X]);
-      while (best.hist.length && t - best.hist[0][0] > (sparse ? 3.5 : 1.2)) best.hist.shift();
+      while (best.hist.length && t - best.hist[0][0] > (sparse ? Math.max(3.5, det.ttl * 1.4) : 1.2)) best.hist.shift();
       best.speed = -regress(best.hist, 1, sparse ? 2 : 4);
       best.vx = regress(best.hist, 2, sparse ? 2 : 4);
     }
@@ -383,7 +391,7 @@ class Tracker {
   // Between sparse updates, move the distance on by the closing speed (you keep walking toward a pole).
   refresh(t) {
     for (const tr of this.tracks)
-      tr.dNow = Math.max(0.3, tr.d - Math.max(0, tr.speed) * Math.min(2, t - tr.last));
+      tr.dNow = Math.max(0.3, tr.d - Math.max(0, tr.speed) * Math.min(tr.ttl, t - tr.last));
   }
   // confirmed tracks that are still fresh
   live(t) { return this.tracks.filter(tr => tr.hits >= tr.minHits && t - tr.last <= Math.max(0.5, tr.ttl * 0.9)); }
@@ -422,14 +430,16 @@ function decideAlerts(tracker, t, cfg) {
       tr.reach = reach;
     }
     if (d > cfg.nearZone + 1) tr.nearDone = false;
-    if (d > cfg.obstacleWarn + 1.5) tr.aheadDone = false;
+    if (d > cfg.obstacleWarn + 2.5) tr.aheadDone = false;
     if (tr.hits < tr.minHits + 1 || t - tr.last > Math.max(0.5, tr.ttl * 0.9)) continue;
+    // warn a little early: slow-updating things (poles) get ~1.2 s of lead, others ~0.3 s
+    const dLead = d - Math.min(1.5, Math.max(0, tr.speed) * (tr.src === 'seg' ? 1.2 : 0.3));
 
     if (fresh && tr.fast >= 2 && tr.d <= tr.reach && t - tr.approachAt > 4)
       out.push({ type: 'approach', pri: 0, tr });
     else if (fresh && tr.crossN >= 2 && tr.d <= tr.reach && t - tr.crossAt > 5 && t - tr.approachAt > 3)
       out.push({ type: 'cross', pri: 1, tr });
-    else if (Math.abs(tr.X) < cfg.corridor / 2 + tr.halfW + cfg.sideWarn && d <= cfg.nearZone && t - tr.approachAt > 4) {
+    else if (Math.abs(tr.X) < cfg.corridor / 2 + tr.halfW + cfg.sideWarn && dLead <= cfg.nearZone && t - tr.approachAt > 4) {
       if (tr.kind === 'person') {
         if (cfg.nearPerson && t - tr.nearAt > 4 && t - (memo.nearPerson || -1e9) > 4) out.push({ type: 'near', pri: 2, tr });
       } else if (t - tr.nearAt > 6) out.push({ type: 'near', pri: 2, tr });
@@ -669,7 +679,7 @@ async function detectSeg(W, H) {
   try {
     out = tf.tidy(() => {
       const img = tf.browser.fromPixels(video);
-      const [vh, vw] = img.shape, r = 321 / Math.max(vh, vw);
+      const [vh, vw] = img.shape, r = P().segSize / Math.max(vh, vw);
       const small = tf.image.resizeBilinear(img, [Math.round(vh * r), Math.round(vw * r)]);
       return tf.squeeze(segModel.model.execute(tf.expandDims(small)));
     });
@@ -680,10 +690,11 @@ async function detectSeg(W, H) {
   segMs = segMs ? 0.7 * segMs + 0.3 * (performance.now() - t0) : performance.now() - t0;
   SEG = SEG || segIds();
   const sx = W / w, sy = H / h, scale = b => [b[0] * sx, b[1] * sy, b[2] * sx, b[3] * sy];
-  const dets = polesFromSeg(labels, w, h, SEG.pole).map(p => makeDet('pole', scale(p.bbox), W, H, cfg, 0.7, 2.5));
+  const ttl = Math.max(2.5, Math.max(P().segEvery, segMs * 4) * 1.6 / 1000);
+  const dets = polesFromSeg(labels, w, h, SEG.pole).map(p => makeDet('pole', scale(p.bbox), W, H, cfg, 0.7, ttl));
   if (cfg.unknown)
     for (const g of groundObstacles(labels, w, h, cfg, pitchDown, SEG))
-      dets.push(makeDet(g.cls, scale(g.bbox), W, H, cfg, 0.6, 2.5, g.d));
+      dets.push(makeDet(g.cls, scale(g.bbox), W, H, cfg, 0.6, ttl, g.d));
   return dets;
 }
 
@@ -699,6 +710,15 @@ async function detectZoom(W, H) {
     .filter(p => { const [x, y, w, h] = p.bbox; return x > 3 && y > 3 && x + w < cw - 3 && y + h < ch - 3; })
     .map(p => ({ ...p, bbox: [p.bbox[0] + x0, p.bbox[1] + y0, p.bbox[2], p.bbox[3]] }));
 }
+
+// ---------- Performance modes ----------
+// light: for most phones · normal: mid-range · full: flagship
+const PERF = {
+  light:  { every: 200, zoomEvery: 0, segEvery: 3000, segSize: 193, cam: [480, 360], fpsCam: 15 },
+  normal: { every: 125, zoomEvery: 4, segEvery: 2000, segSize: 257, cam: [640, 480], fpsCam: 24 },
+  full:   { every: 100, zoomEvery: 3, segEvery: 1500, segSize: 321, cam: [640, 480], fpsCam: 30 }
+};
+const P = () => PERF[cfg.perf] || PERF.light;
 
 // ---------- Main loop ----------
 let fpsN = 0, fpsT = performance.now(), fps = 0, slowFrames = 0, shed = 0;
@@ -716,14 +736,14 @@ async function loop() {
 
       const t0 = performance.now();
       let preds = await model.detect(video, 20, 0.4);
-      if (cfg.zoom && shed < 1 && frame % 3 === 0) preds = mergeDets(preds, await detectZoom(W, H));
+      if (cfg.zoom && shed < 1 && P().zoomEvery && frame % P().zoomEvery === 0) preds = mergeDets(preds, await detectZoom(W, H));
       cocoMs = cocoMs ? 0.8 * cocoMs + 0.2 * (performance.now() - t0) : performance.now() - t0;
       frame++;
       preds = suppressRiders(preds.filter(p => OBJ[p.class] && p.score >= minScoreFor(p.class)));
       let dets = preds.map(p => makeDet(p.class, p.bbox, W, H, cfg, p.score));
 
       // street model (poles / unknown objects): slower, so about once every 1.5 s
-      const segEvery = Math.max(1500, segMs * 4) * (shed >= 2 ? 2 : 1);
+      const segEvery = Math.max(P().segEvery, segMs * 4) * (shed >= 2 ? 2 : 1);
       if (cfg.poles && segModel && performance.now() - lastSeg > segEvery) {
         lastSeg = performance.now();
         try { dets = dets.concat(await detectSeg(W, H)); }
@@ -751,7 +771,7 @@ async function loop() {
   slowFrames = spent > 400 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
   if (slowFrames > 8 && shed < 2) { shed++; slowFrames = 0; }
   if (performance.now() - runStart > 6000) await maybeGoLite();
-  setTimeout(loop, Math.max(15, 100 - spent));   // at most ~10 runs/s: leaves room for camera preview & sound
+  setTimeout(loop, Math.max(20, P().every - spent));   // capped rate: leaves room for camera preview & sound
 }
 
 // Too slow with the accurate model? switch to the fast one automatically.
@@ -772,7 +792,7 @@ function updateStatus() {
   const pole = { on: 'เสา/วัตถุ ✓', loading: 'เสา/วัตถุ…', fail: 'เสา/วัตถุ ✗', off: '' }[cfg.poles ? segState : 'off'];
   const mem = tf.memory();
   $('status').textContent = `${fps.toFixed(1)} fps · ${tf.getBackend()} · ${autoLite || cfg.model === 'lite_mobilenet_v2' ? 'เร็ว' : 'แม่น'} ${pole}` +
-    ` · T${mem.numTensors}${shed ? ' · ลดภาระ' + shed : ''}`;
+    ` · T${mem.numTensors} · ${{ light: 'เบา', normal: 'ปกติ', full: 'เต็ม' }[cfg.perf]}${shed ? ' · ลดภาระ' + shed : ''}`;
 }
 
 let sayTimer = null;
@@ -855,8 +875,8 @@ async function start() {
   note.textContent = 'กำลังเปิดกล้อง…';
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 },
-               frameRate: { ideal: 30 } }, audio: false });
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: P().cam[0] }, height: { ideal: P().cam[1] },
+               frameRate: { ideal: P().fpsCam, max: 30 } }, audio: false });
     video.srcObject = stream;
     await video.play();
     const key = cfg.model + '|' + cfg.webgpu;
@@ -938,7 +958,7 @@ function syncSettingsUI() {
     $(id.replace('nearZ', 'near') + 'V').textContent = fmt ? fmt(cfg[key]) : cfg[key];
   }
   for (const [id, key] of Object.entries(SWITCHES)) $(id).checked = cfg[key];
-  $('model').value = cfg.model;
+  $('model').value = cfg.model; $('perf').value = cfg.perf;
   $('calibMsg').textContent = `ค่าปรับเทียบปัจจุบัน: ×${cfg.focalScale.toFixed(2)}`;
 }
 for (const [id, [key]] of Object.entries(SLIDERS))
@@ -951,6 +971,10 @@ for (const [id, key] of Object.entries(SWITCHES))
     if (key === 'nearPerson') syncNearBtn();
   };
 $('model').onchange = e => { cfg.model = e.target.value; autoLite = false; saveCfg(); };
+$('perf').onchange = e => {
+  cfg.perf = e.target.value; saveCfg();
+  if (running) showSay('ความละเอียดกล้องจะเปลี่ยนเมื่อกดเริ่มใหม่', false);
+};
 for (const g of ['gear', 'gear2']) $(g).addEventListener('click', () => { syncSettingsUI(); dlg.showModal(); });
 $('close').addEventListener('click', () => dlg.close());
 $('reset').addEventListener('click', () => {

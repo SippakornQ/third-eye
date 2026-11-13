@@ -26,7 +26,8 @@ Every warning follows the pattern **what · direction · distance**. Only the mo
 1. Open the link on your phone and tap the big yellow **เริ่ม** (Start) button. Allow camera access.
 2. Hang the phone around your neck with the back camera facing forward.
 3. While it runs, the screen has only two big buttons: **หยุด** (Stop) and **เตือนคนใกล้ เปิด/ปิด** (near-person warning on/off). Tap anywhere else on the screen to hear a short summary of all 3 directions.
-4. ⚙ **Settings:** the main options are simple switches. The advanced section, for a sighted helper, has the distances, the model choice and distance calibration.
+4. **Performance mode** (in ⚙ Settings): **Light** is the default and runs smoothly on most phones. **Normal** is for mid-range phones, and **Full** is for flagships, where it gives the best far-range vehicle detection. If the phone gets hot or laggy, choose Light. The app also sheds load by itself when it notices it is running slow.
+5. ⚙ **Settings:** the main options are simple switches. The advanced section, for a sighted helper, has the distances, the model choice and distance calibration.
 
 ## How it works
 1. **Two AI models running in the browser** (TensorFlow.js, WebGPU when available, otherwise WebGL). No video leaves the phone.
@@ -54,7 +55,7 @@ Every warning follows the pattern **what · direction · distance**. Only the mo
 - **Computer:** run `python -m http.server 8000`, then open http://localhost:8000. The camera only works over HTTPS or on localhost.
 - **Deploy:** go to the repo's Settings → Pages → Source: `main` branch, `/ (root)`.
 
-The small text in the top right corner shows the frame rate (fps), the GPU mode, the model (accurate or fast), and whether pole detection is working (เสา ✓ / ✗). If the accurate model is too slow on your phone, the app switches to the fast model automatically.
+The small text in the top right corner shows the frame rate (fps), the GPU mode, the model (accurate or fast), and whether pole detection is working (เสา ✓ / ✗). If the accurate model is too slow on your phone, the app switches to the fast model automatically. `T` is the number of AI tensors in memory. It should stay roughly flat. If it keeps growing, memory is leaking.
 
 ## Limitations
 - Pole detection depends on the street-scene model. Thin, far-away, or unusual poles can be missed. Pole detection updates about once per second, not every frame.
