@@ -144,7 +144,7 @@
       <option value="mobilenet_v2">แม่นกว่า · อาจกระตุก (ถ้าช้าจะสลับเป็นแบบเร็วเอง)</option>
     </select>
     <div class="sw"><span>ซูมกลางภาพ (จับของไกล)</span><input type="checkbox" id="optZoom"></div>
-    <div class="sw"><span>WebGPU</span><input type="checkbox" id="optGpu"></div>
+    <div class="sw"><span>WebGPU (ทดลอง · อาจค้างบางเครื่อง)</span><input type="checkbox" id="optGpu"></div>
     <label>ปรับเทียบระยะ</label>
     <p class="small">เริ่มใช้งานก่อน ให้คนยืนห่างกล้อง 2 เมตรตรงกลางภาพ แล้วกด "ปรับเทียบ"</p>
     <p class="small" id="calibMsg"></p>
@@ -159,7 +159,7 @@
 <!-- ===================== CORE LOGIC (no DOM, unit-testable) ===================== -->
 <script id="core">
 const DEFAULT_CFG = {
-  v: 5,
+  v: 6,
   sonarRange: 8,          // m — beeps for anything within this distance
   obstacleWarn: 6,        // m — say what is standing in the walking path
   vehicleWarn: 12,        // m — say when a vehicle rushes in / cuts across
@@ -172,7 +172,7 @@ const DEFAULT_CFG = {
   ttc: 4.0,               // s
   model: 'lite_mobilenet_v2',   // fast by default: smooth on most phones
   zoom: true,
-  webgpu: true,
+  webgpu: false,          // WebGL is more stable on phones over long use
   heartbeat: true,
   vibrate: true,
   showCam: true,
@@ -509,17 +509,22 @@ let tracker = new Tracker(), lastDets = [], sectors = [null, null, null], frame 
 let cocoMs = 0, segMs = 0, lastSeg = 0, autoLite = false, runStart = 0;
 
 // ---------- Speech ----------
-let thaiVoice = null, speakingPri = 9;
+let thaiVoice = null, speakingPri = 9, speakStart = 0;
 function pickVoice() {
   thaiVoice = speechSynthesis.getVoices().find(v => (v.lang || '').toLowerCase().startsWith('th')) || null;
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 function say(text, pri = 5) {           // returns true if it will be spoken
   if (!('speechSynthesis' in window)) return false;
+  // Some phones leave speech stuck "speaking" forever — reset it after 5 s.
+  if ((speechSynthesis.speaking || speechSynthesis.pending) && performance.now() - speakStart > 5000) {
+    speechSynthesis.cancel(); speakingPri = 9; sonar.duck(false);
+  }
   if (speechSynthesis.speaking || speechSynthesis.pending) {
     if (pri >= speakingPri) return false;
     speechSynthesis.cancel();
   }
+  speakStart = performance.now();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'th-TH'; if (thaiVoice) u.voice = thaiVoice; u.rate = 1.35;
   speakingPri = pri;
@@ -591,12 +596,17 @@ const sonar = {
 };
 
 // ---------- AI setup ----------
+function tuneTF() {
+  try { tf.env().set('WEBGL_DELETE_TEXTURE_THRESHOLD', 64 * 1024 * 1024); } catch (_) {}
+  try { tf.env().set('WEBGL_PACK', true); } catch (_) {}
+}
 async function setBackend(name) {
   try { return (await tf.setBackend(name)) && (await tf.ready(), tf.getBackend() === name); } catch (_) { return false; }
 }
 async function loadModel(base) {
   const want = cfg.webgpu && navigator.gpu ? ['webgpu', 'webgl'] : ['webgl'];
   const warm = document.createElement('canvas'); warm.width = 320; warm.height = 240;
+  tuneTF();
   for (const b of [...want, 'cpu']) {
     if (tf.getBackend() !== b && !(await setBackend(b))) continue;
     try {
@@ -691,10 +701,14 @@ async function detectZoom(W, H) {
 }
 
 // ---------- Main loop ----------
-let fpsN = 0, fpsT = performance.now(), fps = 0;
+let fpsN = 0, fpsT = performance.now(), fps = 0, slowFrames = 0, shed = 0;
 async function loop() {
   if (!running) return;
   const loopStart = performance.now();
+  // Every tensor made this frame is freed at endScope — no slow memory leak.
+  // (Skipped while the street model is still loading, so its weights are never swept away.)
+  const scoped = segState !== 'loading';
+  if (scoped) tf.engine().startScope();
   try {
     if (video.readyState >= 2) {
       const W = video.videoWidth, H = video.videoHeight;
@@ -702,14 +716,14 @@ async function loop() {
 
       const t0 = performance.now();
       let preds = await model.detect(video, 20, 0.4);
-      if (cfg.zoom && frame % 3 === 0) preds = mergeDets(preds, await detectZoom(W, H));
+      if (cfg.zoom && shed < 1 && frame % 3 === 0) preds = mergeDets(preds, await detectZoom(W, H));
       cocoMs = cocoMs ? 0.8 * cocoMs + 0.2 * (performance.now() - t0) : performance.now() - t0;
       frame++;
       preds = suppressRiders(preds.filter(p => OBJ[p.class] && p.score >= minScoreFor(p.class)));
       let dets = preds.map(p => makeDet(p.class, p.bbox, W, H, cfg, p.score));
 
-      // pole model: slower, so it runs about once a second
-      const segEvery = Math.max(1200, segMs * 3);
+      // street model (poles / unknown objects): slower, so about once every 1.5 s
+      const segEvery = Math.max(1500, segMs * 4) * (shed >= 2 ? 2 : 1);
       if (cfg.poles && segModel && performance.now() - lastSeg > segEvery) {
         lastSeg = performance.now();
         try { dets = dets.concat(await detectSeg(W, H)); }
@@ -728,11 +742,16 @@ async function loop() {
       if (cfg.showCam) draw(live, W, H);
       updateRadar();
       updateStatus();
-      await maybeGoLite();
     }
   } catch (e) { console.error(e); }
+  if (scoped) tf.engine().endScope();
+
+  // Phone getting hot / slow? shed load step by step instead of freezing.
   const spent = performance.now() - loopStart;
-  setTimeout(loop, Math.max(10, 66 - spent));
+  slowFrames = spent > 400 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
+  if (slowFrames > 8 && shed < 2) { shed++; slowFrames = 0; }
+  if (performance.now() - runStart > 6000) await maybeGoLite();
+  setTimeout(loop, Math.max(15, 100 - spent));   // at most ~10 runs/s: leaves room for camera preview & sound
 }
 
 // Too slow with the accurate model? switch to the fast one automatically.
@@ -751,7 +770,9 @@ function updateStatus() {
   if (now - fpsT < 1000) return;
   fps = fpsN * 1000 / (now - fpsT); fpsN = 0; fpsT = now;
   const pole = { on: 'เสา/วัตถุ ✓', loading: 'เสา/วัตถุ…', fail: 'เสา/วัตถุ ✗', off: '' }[cfg.poles ? segState : 'off'];
-  $('status').textContent = `${fps.toFixed(1)} fps · ${tf.getBackend()} · ${autoLite || cfg.model === 'lite_mobilenet_v2' ? 'เร็ว' : 'แม่น'} ${pole}`;
+  const mem = tf.memory();
+  $('status').textContent = `${fps.toFixed(1)} fps · ${tf.getBackend()} · ${autoLite || cfg.model === 'lite_mobilenet_v2' ? 'เร็ว' : 'แม่น'} ${pole}` +
+    ` · T${mem.numTensors}${shed ? ' · ลดภาระ' + shed : ''}`;
 }
 
 let sayTimer = null;
@@ -846,7 +867,7 @@ async function start() {
     }
     if (cfg.poles) loadSeg();            // background, don't wait
     try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (_) {}
-    tracker = new Tracker(); sectors = [null, null, null]; frame = 0; runStart = performance.now();
+    tracker = new Tracker(); sectors = [null, null, null]; frame = 0; runStart = performance.now(); shed = 0; slowFrames = 0;
     running = true;
     document.body.classList.add('running');
     document.body.classList.toggle('nocam', !cfg.showCam);
@@ -926,7 +947,7 @@ for (const [id, key] of Object.entries(SWITCHES))
   $(id).onchange = e => {
     cfg[key] = e.target.checked; saveCfg();
     if (key === 'showCam') { document.body.classList.toggle('nocam', !cfg.showCam); ctx.clearRect(0, 0, canvas.width, canvas.height); }
-    if (key === 'poles' && cfg.poles && running) loadSeg();
+    if (key === 'poles' && cfg.poles && running && !segModel) showSay('มีผลเมื่อกดเริ่มใหม่', false);
     if (key === 'nearPerson') syncNearBtn();
   };
 $('model').onchange = e => { cfg.model = e.target.value; autoLite = false; saveCfg(); };
