@@ -2,7 +2,7 @@
 
 A web app that turns a phone camera into a **3-direction sonar**. Hang the phone around your neck or hold it at chest height, and it beeps for obstacles on the **left, center and right, up to about 5 m away**. The closer an obstacle is, the faster it beeps. People and objects make different sounds, and if something is **coming at you fast**, such as a motorcycle on the sidewalk, it gives a **spoken warning in Thai**.
 
-**Live demo:** `https://<your-username>.github.io/<repo-name>/` (open on a phone)
+**Live demo:** https://sippakornq.github.io/third-eye/` (open on a phone)
 
 ## The problem
 Thai sidewalks are crowded with parked and moving motorcycles, vendor stalls, tables, chairs and people. A white cane only detects what it touches, about one step ahead and at ground level. It cannot tell a blind walker that a motorcycle is speeding toward them, or that a person is about to walk into them. Without help, blind and low-vision people have to walk slowly, bump into things, or depend on someone to guide them.
