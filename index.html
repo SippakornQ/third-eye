@@ -347,7 +347,7 @@ function regress(hist, k, minN = 4) {
 // so a person who is briefly mis-detected as a chair keeps being "คน".
 class Tracker {
   constructor() { this.tracks = []; this.nextId = 1; this.memo = {}; }
-  update(dets, t) {
+  update(dets, t, segRan = false) {
     const used = new Set();
     for (const det of [...dets].sort((a, b) => a.d - b.d)) {
       let best = null, bestDist = 1e9;
@@ -385,16 +385,16 @@ class Tracker {
       best.speed = -regress(best.hist, 1, sparse ? 2 : 4);
       best.vx = regress(best.hist, 2, sparse ? 2 : 4);
     }
-    this.tracks = this.tracks.filter(tr => t - tr.last < tr.ttl);
+    this.tracks = this.tracks.filter(tr => t - tr.last < tr.ttl && !(segRan && tr.src === 'seg' && !used.has(tr)));
     this.refresh(t);
   }
   // Between sparse updates, move the distance on by the closing speed (you keep walking toward a pole).
   refresh(t) {
     for (const tr of this.tracks)
-      tr.dNow = Math.max(0.3, tr.d - Math.max(0, tr.speed) * Math.min(tr.ttl, t - tr.last));
+      tr.dNow = Math.max(0.3, tr.d - Math.min(2, Math.max(0, tr.speed)) * Math.min(1.5, t - tr.last));
   }
   // confirmed tracks that are still fresh
-  live(t) { return this.tracks.filter(tr => tr.hits >= tr.minHits && t - tr.last <= Math.max(0.5, tr.ttl * 0.9)); }
+  live(t) { return this.tracks.filter(tr => tr.hits >= tr.minHits && t - tr.last <= (tr.src === 'seg' ? tr.ttl * 0.9 : 0.45)); }
 }
 
 function pathInfo(tr, cfg) {
@@ -744,14 +744,15 @@ async function loop() {
 
       // street model (poles / unknown objects): slower, so about once every 1.5 s
       const segEvery = Math.max(P().segEvery, segMs * 4) * (shed >= 2 ? 2 : 1);
+      let segRan = false;
       if (cfg.poles && segModel && performance.now() - lastSeg > segEvery) {
         lastSeg = performance.now();
-        try { dets = dets.concat(await detectSeg(W, H)); }
+        try { dets = dets.concat(await detectSeg(W, H)); segRan = true; }
         catch (e) { console.warn(e); segModel = null; segState = 'fail'; }
       }
 
       const t = performance.now() / 1000;
-      tracker.update(dets, t);
+      tracker.update(dets, t, segRan);
       lastDets = dets;
 
       const alerts = decideAlerts(tracker, t, cfg);
@@ -791,7 +792,7 @@ function updateStatus() {
   fps = fpsN * 1000 / (now - fpsT); fpsN = 0; fpsT = now;
   const pole = { on: 'เสา/วัตถุ ✓', loading: 'เสา/วัตถุ…', fail: 'เสา/วัตถุ ✗', off: '' }[cfg.poles ? segState : 'off'];
   const mem = tf.memory();
-  $('status').textContent = `${fps.toFixed(1)} fps · ${tf.getBackend()} · ${autoLite || cfg.model === 'lite_mobilenet_v2' ? 'เร็ว' : 'แม่น'} ${pole}` +
+  $('status').textContent = `AI ${fps.toFixed(1)}/วิ · ${tf.getBackend()} · ${autoLite || cfg.model === 'lite_mobilenet_v2' ? 'เร็ว' : 'แม่น'} ${pole}` +
     ` · T${mem.numTensors} · ${{ light: 'เบา', normal: 'ปกติ', full: 'เต็ม' }[cfg.perf]}${shed ? ' · ลดภาระ' + shed : ''}`;
 }
 
@@ -831,12 +832,16 @@ function draw(tracks, W, H) {
   const fs = Math.max(16, W / 32);
   ctx.lineWidth = Math.max(3, W / 220);
   ctx.font = `bold ${fs}px system-ui, sans-serif`;
+  const now = performance.now() / 1000;
   for (const o of tracks) {
+    if (o.src !== 'seg' && now - o.last > 0.3) continue;      // not seen in the last frames: don't draw
     const [x, y, w, h] = o.bbox;
     const d = o.dNow ?? o.d;
+    ctx.setLineDash(o.src === 'seg' && now - o.last > 0.5 ? [12, 8] : []);
     const danger = o.fast >= 2 || (o.inPath && d <= cfg.nearZone);
     const color = danger ? '#ff1744' : d > cfg.sonarRange ? 'rgba(170,170,170,.8)' : KIND_COLOR[o.kind];
     ctx.strokeStyle = color; ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
     let label = `${o.name} ${showDist(d)}ม.`;
     if (o.fast >= 2) label += ' ⚠'; else if (o.crossing) label += ' ↔'; else if (o.inPath) label += ' ⛔';
     const tw = ctx.measureText(label).width + 12, lh = fs + 10;
