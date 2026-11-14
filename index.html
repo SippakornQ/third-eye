@@ -19,17 +19,21 @@
   .cell .val { font-size: 20px; font-weight: 800; line-height: 1.25; }
   .cell.near { background: #e65100; }
   .cell.danger { background: #c62828; }
-  #fps { position: fixed; top: 100px; right: 8px; font-size: 12px; color: #9e9e9e; background: rgba(0,0,0,.5);
+  #fps { position: fixed; top: 100px; left: 8px; font-size: 12px; color: #9e9e9e; background: rgba(0,0,0,.5);
     padding: 2px 6px; border-radius: 6px; pointer-events: none; }
   #alert { position: fixed; top: 124px; left: 8px; right: 8px; padding: 12px; border-radius: 12px;
     background: #ffd600; color: #000; font-size: 22px; font-weight: 800; text-align: center; display: none; pointer-events: none; }
 
   #controls { position: fixed; left: 10px; right: 10px; bottom: 10px; display: flex; gap: 10px; height: 36vh; }
   #toggle { flex: 1; border: 4px solid #fff; border-radius: 24px; background: #ffd600; color: #000;
-    font: 800 42px/1.2 inherit; cursor: pointer; }
+    font-family: inherit; font-size: 48px; font-weight: 800; line-height: 1.2; cursor: pointer; }
   body.running #controls { height: 20vh; }
   body.running #toggle { background: rgba(0,0,0,.6); color: #fff; font-size: 32px; }
-  #gear { width: 72px; border: 3px solid #888; border-radius: 20px; background: #222; color: #fff; font-size: 30px; }
+  #gear { position: fixed; top: 96px; right: 8px; width: 56px; height: 56px; border: 2px solid #777; border-radius: 16px;
+    background: rgba(30,30,30,.85); color: #fff; font-size: 26px; }
+  details { margin-top: 16px; border-top: 1px solid #333; padding-top: 8px; }
+  summary { font-size: 17px; padding: 8px 0; }
+  #tutor { background: #1565c0; color: #fff; }
   button:focus-visible { outline: 6px solid #00e5ff; }
   #hint { position: fixed; left: 0; right: 0; bottom: calc(36vh + 20px); text-align: center; color: #ccc;
     font-size: 17px; padding: 0 16px; }
@@ -72,35 +76,38 @@
 
 <div id="controls">
   <button id="toggle" aria-label="แตะเพื่อเริ่มโซนาร์">แตะเพื่อเริ่ม</button>
-  <button id="gear" aria-label="ตั้งค่า สำหรับผู้ช่วย">⚙</button>
 </div>
+<button id="gear" aria-label="ตั้งค่าสำหรับผู้ช่วย ระหว่างใช้งานต้องกดค้างเพื่อเปิด">⚙</button>
 
 <dialog id="settings">
-  <h2>ตั้งค่า (สำหรับผู้ช่วย)</h2>
-  <label>ระยะตรวจจับ: <b id="rangeV"></b> เมตร</label>
-  <input type="range" id="range" min="3" max="10" step="0.5">
-  <label>โซนเตรียมตัว (บอกว่าอะไรขวางทาง): <b id="prepV"></b> เมตร</label>
-  <input type="range" id="prep" min="1" max="4" step="0.5">
+  <h2>ตั้งค่า</h2>
   <label>ความดัง: <b id="volV"></b>%</label>
   <input type="range" id="vol" min="0.1" max="1" step="0.05">
-  <label>พูดเตือนเมื่อพุ่งเข้าหาเร็วกว่า: <b id="spdV"></b> เมตร/วินาที</label>
-  <input type="range" id="spd" min="1" max="5" step="0.1">
-  <label>โมเดล AI</label>
-  <select id="model">
-    <option value="lite_mobilenet_v2">เร็ว (แนะนำ)</option>
-    <option value="mobilenet_v2">แม่นกว่า แต่ช้ากว่า</option>
-  </select>
-  <div class="row"><input type="checkbox" id="zoom"><span>ซูมกลางภาพเพื่อจับของไกล (7–10 ม.)</span></div>
-  <div class="row"><input type="checkbox" id="gpu"><span>เร่งความเร็วด้วย WebGPU (ถ้ามือถือรองรับ)</span></div>
-  <div class="row"><input type="checkbox" id="hb"><span>เสียง "ทางโล่ง" จังหวะปกติ เมื่อไม่พบสิ่งกีดขวาง</span></div>
-  <div class="row"><input type="checkbox" id="vib"><span>สั่นเมื่อมีของขวางในโซนเตรียมตัว (Android)</span></div>
-  <label>ปรับเทียบระยะ</label>
-  <p class="small">ให้คนหนึ่งคนยืนห่างกล้อง 2 เมตรพอดีตรงกลางภาพ (ต้องเริ่มโซนาร์ก่อน) แล้วกดปุ่มด้านล่าง</p>
-  <p id="calibMsg"></p>
-  <div class="btns">
-    <button id="calib">ปรับเทียบ (คนอยู่ 2 ม.)</button>
-    <button id="close">เสร็จ</button>
-  </div>
+  <div class="row"><input type="checkbox" id="hb"><span>เสียง "ทางโล่ง" เมื่อไม่พบสิ่งกีดขวาง</span></div>
+  <div class="row"><input type="checkbox" id="vib"><span>สั่นเมื่อมีของขวางใกล้ (Android)</span></div>
+  <div class="btns"><button id="tutor">🔊 ฟังคำแนะนำเสียงอีกครั้ง</button></div>
+
+  <details>
+    <summary>ขั้นสูง (สำหรับผู้ช่วย)</summary>
+    <label>ระยะตรวจจับ: <b id="rangeV"></b> เมตร</label>
+    <input type="range" id="range" min="3" max="10" step="0.5">
+    <label>โซนเตรียมตัว (บอกว่าอะไรขวางทาง): <b id="prepV"></b> เมตร</label>
+    <input type="range" id="prep" min="1" max="4" step="0.5">
+    <label>พูดเตือนเมื่อพุ่งเข้าหาเร็วกว่า: <b id="spdV"></b> เมตร/วินาที</label>
+    <input type="range" id="spd" min="1" max="5" step="0.1">
+    <label>โมเดล AI</label>
+    <select id="model">
+      <option value="lite_mobilenet_v2">เร็ว (แนะนำ)</option>
+      <option value="mobilenet_v2">แม่นกว่า แต่ช้ากว่า</option>
+    </select>
+    <div class="row"><input type="checkbox" id="zoom"><span>ซูมกลางภาพเพื่อจับของไกล (7–10 ม.)</span></div>
+    <div class="row"><input type="checkbox" id="gpu"><span>เร่งความเร็วด้วย WebGPU (ถ้ามือถือรองรับ)</span></div>
+    <label>ปรับเทียบระยะ</label>
+    <p class="small">ให้คนหนึ่งคนยืนห่างกล้อง 2 เมตรพอดีตรงกลางภาพ (ต้องเริ่มโซนาร์ก่อน) แล้วกดปุ่มด้านล่าง</p>
+    <p id="calibMsg"></p>
+    <div class="btns"><button id="calib">ปรับเทียบ (คนอยู่ 2 ม.)</button></div>
+  </details>
+  <div class="btns"><button id="close">เสร็จ</button></div>
 </dialog>
 
 <!-- ===================== CORE LOGIC (no DOM, unit-testable) ===================== -->
@@ -126,19 +133,19 @@ const DEFAULT_CFG = {
 // COCO class -> [Thai name, typical real height (m), typical real width (m, narrowest view)]
 const OBJ = {
   person: ['คน', 1.65, 0.5],
-  bicycle: ['จักรยาน', 1.0, 0.6], car: ['รถยนต์', 1.5, 1.75], motorcycle: ['มอเตอร์ไซค์', 1.15, 0.75],
+  bicycle: ['จักรยาน', 1.0, 0.6], car: ['รถ', 1.5, 1.75], motorcycle: ['มอไซค์', 1.15, 0.75],
   bus: ['รถเมล์', 3.0, 2.5], truck: ['รถบรรทุก', 2.8, 2.3],
-  dog: ['สุนัข', 0.55, 0.3], cat: ['แมว', 0.3, 0.15],
+  dog: ['หมา', 0.55, 0.3], cat: ['แมว', 0.3, 0.15],
   chair: ['เก้าอี้', 0.9, 0.5], bench: ['ม้านั่ง', 0.8, 0.5], 'dining table': ['โต๊ะ', 0.75, 0.8],
-  couch: ['โซฟา', 0.85, 0.9], bed: ['เตียง', 0.6, 1.0], 'potted plant': ['กระถางต้นไม้', 0.6, 0.45],
-  'fire hydrant': ['หัวดับเพลิง', 0.8, 0.35], 'parking meter': ['เสามิเตอร์', 1.3, 0.3],
-  'stop sign': ['ป้าย', 0.75, 0.75], suitcase: ['กระเป๋าเดินทาง', 0.65, 0.4],
-  umbrella: ['ร่ม', 1.0, 1.0], refrigerator: ['ตู้เย็น', 1.7, 0.7], toilet: ['ชักโครก', 0.75, 0.4]
+  couch: ['โซฟา', 0.85, 0.9], bed: ['เตียง', 0.6, 1.0], 'potted plant': ['กระถาง', 0.6, 0.45],
+  'fire hydrant': ['หัวดับเพลิง', 0.8, 0.35], 'parking meter': ['เสา', 1.3, 0.3],
+  'stop sign': ['ป้าย', 0.75, 0.75], suitcase: ['กระเป๋า', 0.65, 0.4],
+  umbrella: ['ร่ม', 1.0, 1.0], refrigerator: ['ตู้', 1.7, 0.7], toilet: ['ชักโครก', 0.75, 0.4]
 };
 const VEHICLE = new Set(['bicycle','car','motorcycle','bus','truck']);
 const MOVING = new Set(['person','dog','cat', ...VEHICLE]);
 const SECTOR_NAMES = ['ซ้าย', 'กลาง', 'ขวา'];
-const SECTOR_WORDS = ['ด้านซ้าย', 'ข้างหน้า', 'ด้านขวา'];
+const SECTOR_WORDS = ['ทางซ้าย', 'ข้างหน้า', 'ทางขวา'];
 const KIND_NAMES = { person: 'คน', vehicle: 'ยานพาหนะ', object: 'สิ่งของ' };
 
 function kindOf(cls) { return cls === 'person' ? 'person' : VEHICLE.has(cls) ? 'vehicle' : 'object'; }
@@ -259,16 +266,16 @@ function decideAlerts(tracks, t, cfg) {
   return out.sort((a, b) => a.pri - b.pri || a.tr.d - b.tr.d);
 }
 
-function speakDist(d) { return d < 1 ? 'ไม่ถึง 1 เมตร' : `${Math.round(d)} เมตร`; }
+function speakDist(d) { return d < 0.75 ? 'ครึ่งเมตร' : `${Math.round(d)} เมตร`; }
 function showDist(d) { return d < 10 ? d.toFixed(1) : Math.round(d).toString(); }
 function sideWord(X) { return SECTOR_WORDS[X < -0.6 ? 0 : X > 0.6 ? 2 : 1]; }
 
+// Short: what · where · how far. Most important word (what) first, distance last.
 function alertText(a) {
   const tr = a.tr, d = speakDist(tr.d);
-  if (a.type === 'approach')
-    return `ระวัง ${tr.name} ${tr.kind === 'person' ? 'เดินเข้ามาเร็ว' : 'พุ่งเข้ามา'} ${sideWord(tr.X)} ${d}`;
-  if (a.type === 'cross') return `${tr.name} กำลังตัดผ่าน จาก${tr.X < 0 ? 'ซ้าย' : 'ขวา'} ${d}`;
-  return `${tr.name} ขวางทาง ${d}`;
+  if (a.type === 'approach') return `${tr.name}${sideWord(tr.X)} ${d}`;      // a siren plays first
+  if (a.type === 'cross') return `${tr.name}ตัดหน้า จาก${tr.X < 0 ? 'ซ้าย' : 'ขวา'} ${d}`;
+  return `${tr.name}ข้างหน้า ${d}`;
 }
 
 // Nearest tracked thing in each sector within range.
@@ -335,6 +342,18 @@ function pickVoice() {
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 let speakingPri = 9;
+function speakAsync(text) {
+  return new Promise(res => {
+    if (!('speechSynthesis' in window)) return res();
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'th-TH'; if (thaiVoice) u.voice = thaiVoice; u.rate = 1.1;
+    const done = () => { clearTimeout(guard); res(); };
+    const guard = setTimeout(done, 6000);                 // never hang if the phone drops the end event
+    u.onend = u.onerror = done;
+    speechSynthesis.speak(u);
+  });
+}
 function say(text, pri = 5) {           // lower pri number = more important
   if (!('speechSynthesis' in window)) return;
   if (speechSynthesis.speaking) { if (pri >= speakingPri) return; speechSynthesis.cancel(); }
@@ -406,7 +425,22 @@ const sonar = {
     } else this.lastHb = -1;
   },
   start() { this.last = [-1, -1, -1]; this.lastHb = -1; this.timer = setInterval(() => this.tick(), 25); },
-  stop() { clearInterval(this.timer); this.timer = null; }
+  stop() { clearInterval(this.timer); this.timer = null; }, 
+  // Peak-End: a clear, pleasant start and a clearly different end
+  chime(up) {
+    const now = this.ac.currentTime, notes = up ? [523, 659, 784] : [784, 659, 523];
+    notes.forEach((f, i) => this.tone(now + i * 0.13, f, 'sine', 0.22, 0.45, 0));
+  },
+  // Von Restorff: the only sound like this in the app — means "danger, stop"
+  siren() {
+    const now = this.ac.currentTime;
+    for (let i = 0; i < 4; i++) this.tone(now + i * 0.12, i % 2 ? 700 : 1100, 'square', 0.11, 0.3, 0);
+  },
+  // Doherty threshold: instant feedback on every tap, then a soft tick while loading
+  click() { this.tone(this.ac.currentTime, 1500, 'sine', 0.04, 0.4, 0); },
+  ticker: null,
+  startTicks() { this.stopTicks(); this.ticker = setInterval(() => this.tone(this.ac.currentTime, 900, 'sine', 0.03, 0.15, 0), 700); },
+  stopTicks() { clearInterval(this.ticker); this.ticker = null; }
 };
 
 // ---------- AI setup: fastest backend that works ----------
@@ -457,7 +491,7 @@ async function loop() {
       lastDets = dets;
 
       const alerts = decideAlerts(tracker.tracks, t, cfg);
-      if (alerts.length) announce(alerts[0]);
+      if (alerts.length && !tutorialOn) announce(alerts[0]);
 
       const live = tracker.live(t);
       sectors = sectorState(live, cfg.range);
@@ -478,7 +512,11 @@ async function loop() {
 let alertTimer = null;
 function announce(a) {
   const text = alertText(a);
-  say(text, a.pri);
+  if (a.pri === 0) {                     // danger: siren first, words right after it
+    sonar.siren();
+    if (speechSynthesis.speaking) { speechSynthesis.cancel(); speakingPri = 9; }
+    setTimeout(() => say(text, 0), 450);
+  } else say(text, a.pri);
   alertEl.textContent = (a.pri === 0 ? '⚠ ' : a.pri === 1 ? '↔ ' : '⛔ ') + text;
   alertEl.style.background = a.pri === 0 ? '#ff1744' : '#ffd600';
   alertEl.style.color = a.pri === 0 ? '#fff' : '#000';
@@ -526,18 +564,54 @@ function draw(tracks, W, H) {
 
 // ---------- Tap the camera area: spoken summary ----------
 $('view').addEventListener('click', () => {
+  if (tutorialOn) { skipTutorial(); return; }
   if (!running) return;
   const parts = sectors.map((s, i) =>
     `${SECTOR_NAMES[i]} ${s ? `${s.name} ${speakDist(s.d)}${s.inPath ? ' ขวางทาง' : ''}` : 'โล่ง'}`);
   say(parts.join(', '), 3);
 });
 
+// ---------- Sound tutorial: plays once on first use, tap the screen to skip ----------
+let tutorialOn = false;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function demo(fn, times, gap) { for (let i = 0; i < times && tutorialOn; i++) { fn(); await wait(gap); } }
+async function tutorial() {
+  tutorialOn = true;
+  msg.textContent = 'คำแนะนำเสียง — แตะจอเพื่อข้าม';
+  const ac = () => sonar.ac.currentTime;
+  const steps = [
+    ['แนะนำเสียงสั้นๆ แตะจอเพื่อข้าม', null],
+    ['เสียงนี้คือ คน', () => demo(() => sonar.beep(1, 'person', ac()), 3, 350)],
+    ['เสียงนี้คือ รถ', () => demo(() => sonar.beep(1, 'vehicle', ac()), 3, 350)],
+    ['เสียงนี้คือ สิ่งของ', () => demo(() => sonar.beep(1, 'object', ac()), 3, 350)],
+    ['ยิ่งใกล้ เสียงยิ่งถี่', async () => { for (const g of [600, 450, 300, 200, 120, 80, 80, 80]) { if (!tutorialOn) return; sonar.beep(1, 'object', ac()); await wait(g); } }],
+    ['เสียงดังทางไหน ของอยู่ทางนั้น', async () => { await demo(() => sonar.beep(0, 'person', ac()), 2, 300); await demo(() => sonar.beep(2, 'person', ac()), 2, 300); }],
+    ['เสียงเบาๆ แบบนี้ แปลว่าทางโล่ง', () => demo(() => sonar.tone(ac(), 330, 'sine', 0.05, 0.25, 0), 2, 900)],
+    ['เสียงนี้แปลว่า อันตราย ให้หยุด', () => demo(() => sonar.siren(), 1, 700)],
+    ['เริ่มใช้งานได้เลย', null]
+  ];
+  for (const [text, play] of steps) {
+    if (!tutorialOn) break;
+    await speakAsync(text);
+    if (play && tutorialOn) await play();
+    await wait(250);
+  }
+  tutorialOn = false;
+  try { localStorage.setItem('third-eye-tutorial', '1'); } catch (_) {}
+  msg.textContent = '';
+}
+function skipTutorial() { if (tutorialOn) { tutorialOn = false; speechSynthesis.cancel(); } }
+function tutorialSeen() { try { return localStorage.getItem('third-eye-tutorial') === '1'; } catch (_) { return true; } }
+
 // ---------- Start / stop ----------
 async function start() {
   const btn = $('toggle');
   btn.disabled = true;
   sonar.init();
-  say('กำลังเปิดกล้อง', 4);
+  sonar.click();                         // heard within a few ms of the tap
+  btn.textContent = 'กำลังเปิด…';
+  say('กำลังเปิด', 4);
+  sonar.startTicks();                    // soft ticks = "still working"
   msg.textContent = 'กำลังเปิดกล้อง…';
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -558,15 +632,21 @@ async function start() {
     btn.textContent = 'แตะเพื่อหยุด';
     btn.setAttribute('aria-label', 'โซนาร์กำลังทำงาน แตะเพื่อหยุด');
     msg.textContent = '';
+    sonar.stopTicks();
+    sonar.chime(true);
+    if (!tutorialSeen()) { await wait(600); await tutorial(); }
+    if (!running) { btn.disabled = false; return; }    // stopped during the tutorial
     sonar.start();
-    say('โซนาร์พร้อม แตะกลางจอเพื่อฟังสรุป', 4);
+    say('พร้อม แตะกลางจอเพื่อฟังสรุป', 4);
     loop();
   } catch (e) {
     console.error(e);
     const why = cameraError(e);
     msg.innerHTML = why;
+    sonar.stopTicks();
     say(why.split('<br>')[0], 4);
     stream?.getTracks().forEach(t => t.stop()); stream = null;
+    btn.textContent = 'แตะเพื่อเริ่ม';
   }
   btn.disabled = false;
 }
@@ -593,13 +673,15 @@ function cameraError(e) {
 
 function stop() {
   running = false;
-  sonar.stop();
+  skipTutorial();
+  sonar.stop(); sonar.stopTicks();
+  sonar.chime(false);
   stream?.getTracks().forEach(t => t.stop()); stream = null;
   wakeLock?.release?.(); wakeLock = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   sectors = [null, null, null]; updateRadar();
   speechSynthesis.cancel(); speakingPri = 9;
-  say('หยุดโซนาร์', 4);
+  say('หยุดแล้ว', 4);
   document.body.classList.remove('running');
   const btn = $('toggle');
   btn.textContent = 'แตะเพื่อเริ่ม';
@@ -627,7 +709,25 @@ function syncSettingsUI() {
   $('hb').checked = cfg.heartbeat; $('vib').checked = cfg.vibrate;
   $('calibMsg').textContent = `ค่าปรับเทียบปัจจุบัน: ×${cfg.focalScale.toFixed(2)}`;
 }
-$('gear').addEventListener('click', () => { syncSettingsUI(); dlg.showModal(); });
+function openSettings() { syncSettingsUI(); dlg.showModal(); }
+let gearTimer = null, gearOpened = false;
+$('gear').addEventListener('pointerdown', () => {
+  gearOpened = false;
+  gearTimer = setTimeout(() => { gearOpened = true; if (sonar.ac) sonar.click(); openSettings(); }, 700);
+});
+for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) $('gear').addEventListener(ev, () => clearTimeout(gearTimer));
+$('gear').addEventListener('click', () => {
+  if (gearOpened) return;
+  if (!running) openSettings();                 // not walking: a normal tap is fine
+  else say('กดค้างเพื่อเปิดตั้งค่า', 4);      // walking: a stray tap does nothing harmful
+});
+$('tutor').addEventListener('click', async () => {
+  dlg.close(); sonar.init();
+  const wasRunning = running;
+  if (wasRunning) sonar.stop();
+  await tutorial();
+  if (wasRunning && running) sonar.start();
+});
 $('close').addEventListener('click', () => dlg.close());
 $('range').oninput = e => { cfg.range = +e.target.value; saveCfg(); syncSettingsUI(); };
 $('prep').oninput = e => { cfg.prepDist = +e.target.value; saveCfg(); syncSettingsUI(); };

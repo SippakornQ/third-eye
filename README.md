@@ -21,12 +21,31 @@ Blind and low-vision people walking on sidewalks, around campus, or around their
 | Beeps get faster → nearly continuous | Closer (about 0.9 s apart at the edge of range, nearly continuous under 1 m) |
 | Left ear / center / right ear | The obstacle's direction. Left is also slightly lower in pitch and right slightly higher, so a single speaker still works |
 
-**Spoken warnings, from most to least urgent:**
-1. **Rushing in:** "ระวัง มอเตอร์ไซค์ พุ่งเข้ามา ข้างหน้า 7 เมตร" ("watch out, motorcycle rushing in, ahead, 7 m"). Something is closing fast and will reach your path within about 4 s.
-2. **Cutting across:** "รถยนต์ กำลังตัดผ่าน จากซ้าย 5 เมตร" ("car crossing from the left, 5 m"). Something is moving sideways into your walking path.
-3. **Get-ready zone (2 m):** "เก้าอี้ ขวางทาง 2 เมตร" ("chair blocking the path, 2 m"). The app names whatever is standing in your path.
+| Siren (two fast alternating tones) | **Danger, stop.** This is the only sound like it in the app |
+| Rising three notes / falling three notes | Sonar started / stopped |
+| Soft ticks right after you tap Start | Still loading, please wait |
+
+**Spoken warnings are short: what · where · how far.**
+1. **Rushing in:** siren, then "มอไซค์ข้างหน้า 7 เมตร" ("motorcycle ahead, 7 m"). Something is closing fast and will reach your path within about 4 s.
+2. **Cutting across:** "รถตัดหน้า จากซ้าย 5 เมตร" ("car cutting across from the left, 5 m"). Something is moving sideways into your walking path.
+3. **Get-ready zone (2 m):** "เก้าอี้ข้างหน้า 2 เมตร" ("chair ahead, 2 m"). The app names whatever is standing in your path.
+
+**First use:** a short spoken sound tutorial plays each sound and says what it means. Tap the screen to skip it, or replay it any time from ⚙ Settings.
 
 Tap the middle of the screen to hear a spoken summary of all 3 directions.
+
+## UX design choices (based on [Laws of UX](https://lawsofux.com/))
+The main users can't see the screen, so each law is applied to **sound and touch**.
+
+| Law | What we did |
+|---|---|
+| Cognitive Load / Working Memory | Warnings are short, 3 parts: what · where · how far, with the most important word first |
+| Von Restorff Effect | A unique siren plays only for real danger, so it stands out from every other sound |
+| Doherty Threshold | Every tap gets a sound within milliseconds, and soft ticks play while the AI loads |
+| Paradox of the Active User | Nobody reads manuals, so a skippable spoken tutorial teaches the sounds on first use |
+| Fitts's Law | The Start/Stop button covers about a third of the screen. Settings sits far away in a corner and needs a long press while walking, so it can't be opened by accident |
+| Hick's Law / Choice Overload | Settings show only 3 choices. Everything else is under "Advanced", for a sighted helper |
+| Peak-End Rule | Start and stop each have their own short melody, so the experience begins and ends clearly |
 
 ## How it works
 1. **Detection:** COCO-SSD (TensorFlow.js) runs fully in the browser, using WebGPU when available and falling back to WebGL. No video leaves the phone.
